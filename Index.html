@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <base target="_top">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>LHK</title>
+  <style>
+    :root{--primary:#1769e0;--bg:#f4f7fb;--card:#fff;--text:#182230;--muted:#667085;--border:#e4e7ec;--danger:#d92d20;--success:#039855}
+    *{box-sizing:border-box} body{margin:0;background:var(--bg);font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;color:var(--text)}
+    .wrap{max-width:1180px;margin:auto;padding:16px}.hero{background:linear-gradient(135deg,#145dd7,#3b82f6);color:#fff;border-radius:20px;padding:20px;box-shadow:0 10px 28px rgba(16,24,40,.12)}
+    h1{font-size:24px;margin:0 0 5px}.sub{opacity:.88;font-size:13px}.meta{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:18px}.meta .item{background:rgba(255,255,255,.14);padding:11px;border-radius:12px;min-width:0}.meta small{display:block;opacity:.8;margin-bottom:4px}.meta b{font-size:14px;display:block;overflow-wrap:anywhere}
+    .card{background:var(--card);border:1px solid var(--border);border-radius:18px;padding:16px;margin-top:14px;box-shadow:0 2px 8px rgba(16,24,40,.04)}.toolbar{display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap}.toolbar-left{display:flex;gap:8px;flex-wrap:wrap}
+    button{border:0;border-radius:10px;padding:10px 13px;font-weight:700;cursor:pointer;font:inherit}.primary{background:var(--primary);color:#fff}.secondary{background:#eef2f6;color:#344054}.danger{background:#fee4e2;color:var(--danger)}
+    input,textarea,select{width:100%;border:1px solid #cfd4dc;border-radius:10px;padding:10px 11px;font:inherit;background:#fff}.search{max-width:340px}.month{max-width:190px}.status{font-size:13px;color:var(--muted);margin-top:10px}
+    .table-wrap{overflow:auto;margin-top:12px}table{width:100%;border-collapse:collapse;min-width:900px}th,td{border-bottom:1px solid var(--border);padding:10px;text-align:left;vertical-align:top;font-size:13px}th{background:#f8fafc;position:sticky;top:0;z-index:1}.actions{display:flex;gap:6px}.empty{text-align:center;padding:35px;color:var(--muted)}a{color:var(--primary);word-break:break-all}
+    .modal{position:fixed;inset:0;background:rgba(15,23,42,.52);display:none;align-items:center;justify-content:center;padding:12px;z-index:20}.modal.show{display:flex}.dialog{background:#fff;width:min(700px,100%);max-height:94vh;overflow:auto;border-radius:18px;padding:18px}.dialog h2{margin:0 0 16px}.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}.full{grid-column:1/-1}.field label{display:block;font-size:12px;font-weight:800;margin-bottom:6px}.check{display:flex;gap:8px;align-items:center;font-size:13px}.check input{width:auto}.modal-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:18px}.loading{opacity:.58;pointer-events:none}.signature-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-top:18px}.sig{min-height:150px;text-align:center;padding-top:15px}.sig .date{margin-bottom:55px}.sig .name{font-weight:800;text-decoration:underline}.sig .nip{font-size:13px;margin-top:4px}.sig .role{font-size:13px;margin-bottom:4px}
+    .notice{padding:11px 13px;border-radius:10px;background:#eff8ff;color:#175cd3;font-size:13px;margin-top:12px}.hidden{display:none}
+    @media(max-width:760px){.wrap{padding:10px}.hero{border-radius:15px;padding:15px}.meta{grid-template-columns:1fr 1fr}.toolbar{align-items:stretch}.toolbar-left{width:100%}.toolbar-left button{flex:1}.search,.month{max-width:none;width:100%}.grid{grid-template-columns:1fr}.full{grid-column:auto}.signature-grid{grid-template-columns:1fr}.sig{min-height:125px}.table-wrap{display:none}.mobile-list{display:block}.mobile-row{border:1px solid var(--border);border-radius:13px;padding:12px;margin-top:9px}.mobile-row .line{display:grid;grid-template-columns:85px 1fr;gap:7px;margin:4px 0;font-size:13px}.mobile-row .label{color:var(--muted)}.mobile-row .actions{margin-top:10px}.mobile-row .actions button{flex:1}}
+    @media(min-width:761px){.mobile-list{display:none}}
+  </style>
+</head>
+<body>
+<div class="wrap" id="app">
+  <section class="hero">
+    <h1 id="pageTitle">Laporan Hasil Kegiatan</h1><div class="sub">Data tersimpan langsung ke Google Spreadsheet pemilik.</div>
+    <div class="meta">
+      <div class="item"><small>Nama</small><b id="mNama">-</b></div><div class="item"><small>NIP</small><b id="mNip">-</b></div>
+      <div class="item"><small>Jabatan</small><b id="mJabatan">-</b></div><div class="item"><small>Sub Bagian</small><b id="mSub">-</b></div>
+    </div>
+  </section>
+
+  <section class="card">
+    <div class="toolbar">
+      <div class="toolbar-left"><button class="primary" onclick="openAdd()">+ Tambah Kegiatan</button><button class="secondary" onclick="loadData()">↻ Refresh</button></div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;flex:1;justify-content:flex-end"><select id="month" class="month" onchange="changeMonth()"></select><input id="search" class="search" placeholder="Cari kegiatan..." oninput="render()"></div>
+    </div>
+    <div class="notice">Bulan laporan: <b id="monthLabel">-</b>. Tanggal tanda tangan otomatis menjadi hari terakhir bulan yang dipilih.</div>
+    <div class="status" id="status">Memuat...</div>
+    <div class="table-wrap"><table><thead><tr><th>NO</th><th>TANGGAL</th><th>PUKUL</th><th>URAIAN KEGIATAN</th><th>BUKTI</th><th>LINK</th><th>KETERANGAN</th><th>AKSI</th></tr></thead><tbody id="tbody"></tbody></table></div>
+    <div class="mobile-list" id="mobileList"></div>
+  </section>
+
+  <section class="card">
+    <b>Tanda Tangan</b><div class="status">Kiri = atasan/Kasubbag. Kanan = pemilik Sheet. Untuk Sekretaris, hanya satu tanda tangan di kanan.</div>
+    <div class="signature-grid" id="signatures"></div>
+  </section>
+</div>
+
+<div class="modal" id="modal"><div class="dialog"><h2 id="modalTitle">Tambah Kegiatan</h2><input type="hidden" id="rowNumber"><div class="grid">
+  <div class="field"><label>Nomor</label><input id="nomor" type="number" min="1"></div><div class="field"><label>Tanggal</label><input id="tanggal" type="date"></div>
+  <div class="field"><label>Pukul</label><input id="pukul" placeholder="08:00-10:00 WIB"></div><div class="field"><label>Jumlah Realisasi Bukti Dukung</label><input id="jumlah" type="number" min="0"></div>
+  <div class="field full"><label>Uraian Kegiatan *</label><textarea id="uraian" rows="4"></textarea></div><div class="field full"><label>Link Bukti Dukung</label><input id="link" type="url"></div>
+  <div class="field full"><label>Keterangan</label><input id="keterangan"></div><label class="check full"><input id="usePreviousDate" type="checkbox"> Lanjutan dari tanggal sebelumnya (NO dan TANGGAL dikosongkan).</label>
+</div><div class="modal-actions"><button class="secondary" onclick="closeModal()">Batal</button><button class="primary" onclick="save()">Simpan</button></div></div></div>
+
+<script>
+let rows=[], profile=null, currentMonth='';
+const isGas = !!(window.google && google.script && google.script.run);
+
+function callApi(action,payload){
+  if(isGas){
+    return new Promise((resolve,reject)=>{
+      const r=google.script.run.withSuccessHandler(resolve).withFailureHandler(e=>reject(e));
+      if(action==='initial') r.getInitialData(payload?.monthKey||'');
+      else if(action==='profile') r.getProfile();
+      else if(action==='setMonth') r.setReportMonth(payload.monthKey);
+      else if(action==='save') r.saveRow(payload);
+      else if(action==='delete') r.deleteRow(payload.rowNumber);
+    });
+  }
+  const params=new URLSearchParams({action}); if(payload) Object.entries(payload).forEach(([k,v])=>params.set(k,typeof v==='object'?JSON.stringify(v):String(v)));
+  return fetch('/api?'+params.toString(),{credentials:'same-origin'}).then(async r=>{const d=await r.json();if(!r.ok||d.error)throw new Error(d.error||'API error');return d;});
+}
+
+function initMonths(){
+  const s=document.getElementById('month'); const now=new Date(); const names=['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
+  s.innerHTML=''; for(let y=now.getFullYear()-1;y<=now.getFullYear()+1;y++)for(let m=1;m<=12;m++){const o=document.createElement('option');o.value=y+'-'+String(m).padStart(2,'0');o.textContent=names[m-1]+' '+y;s.appendChild(o)}
+  s.value=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0');
+}
+function loadData(){setStatus('Memuat data...');document.getElementById('app').classList.add('loading');callApi('initial',{monthKey:currentMonth||document.getElementById('month').value}).then(d=>{document.getElementById('app').classList.remove('loading');profile=d.profile;rows=d.rows||[];currentMonth=d.month.key;document.getElementById('month').value=currentMonth;document.getElementById('monthLabel').textContent=d.month.name+' '+d.month.year;fillMeta();renderSignatures(d.signatures);render();setStatus('Diperbarui '+new Date().toLocaleTimeString('id-ID'));}).catch(e=>{document.getElementById('app').classList.remove('loading');setStatus('ERROR: '+e.message);});}
+function fillMeta(){document.getElementById('pageTitle').textContent='LHK — '+profile.nama;document.getElementById('mNama').textContent=profile.nama;document.getElementById('mNip').textContent=profile.nip;document.getElementById('mJabatan').textContent=profile.jabatan;document.getElementById('mSub').textContent=profile.subBagian;}
+function changeMonth(){const key=document.getElementById('month').value;setStatus('Mengganti bulan...');document.getElementById('app').classList.add('loading');callApi('setMonth',{monthKey:key}).then(()=>{currentMonth=key;loadData()}).catch(e=>{document.getElementById('app').classList.remove('loading');setStatus('ERROR: '+e.message);alert(e.message)});}
+function renderSignatures(s){const box=document.getElementById('signatures');if(!s)return;let html='';if(s.superior){html+=`<div class="sig"><div class="role">${esc(s.superior.title)}</div><div class="date">${esc(s.dateLabel)}</div><div class="name">${esc(s.superior.name)}</div><div class="nip">NIP. ${esc(s.superior.nip)}</div></div>`;}html+=`<div class="sig"><div class="role">${s.isSecretary?'Sekretaris':'Staf'}</div><div class="date">${esc(s.dateLabel)}</div><div class="name">${esc(s.owner.name)}</div><div class="nip">NIP. ${esc(s.owner.nip)}</div></div>`;box.innerHTML=html;}
+function render(){const q=(document.getElementById('search').value||'').toLowerCase();const f=rows.filter(r=>[r.noEffective,r.tanggal,r.pukul,r.uraian,r.jumlah,r.link,r.keterangan].join(' ').toLowerCase().includes(q));const tb=document.getElementById('tbody');const ml=document.getElementById('mobileList');if(!f.length){tb.innerHTML='<tr><td colspan="8" class="empty">Tidak ada data.</td></tr>';ml.innerHTML='<div class="empty">Tidak ada data.</div>';return;}tb.innerHTML=f.map(rowHtml).join('');ml.innerHTML=f.map(mobileHtml).join('');}
+function rowHtml(r){return `<tr><td>${esc(r.nomor)}</td><td>${esc(formatDateId(r.tanggal))}${r.tanggalIsInherited?'<div class="status">lanjutan</div>':''}</td><td>${esc(r.pukul)}</td><td>${esc(r.uraian).replace(/\n/g,'<br>')}</td><td>${esc(r.jumlah)}</td><td>${r.link?`<a href="${escAttr(r.link)}" target="_blank" rel="noopener">Buka</a>`:''}</td><td>${esc(r.keterangan)}</td><td><div class="actions"><button class="secondary" onclick="openEdit(${r.rowNumber})">Edit</button><button class="danger" onclick="removeRow(${r.rowNumber})">Hapus</button></div></td></tr>`}
+function mobileHtml(r){return `<div class="mobile-row"><div class="line"><span class="label">No</span><b>${esc(r.nomor||r.noEffective||'')}</b></div><div class="line"><span class="label">Tanggal</span><span>${esc(formatDateId(r.tanggal))}</span></div><div class="line"><span class="label">Pukul</span><span>${esc(r.pukul)}</span></div><div class="line"><span class="label">Kegiatan</span><span>${esc(r.uraian).replace(/\n/g,'<br>')}</span></div><div class="line"><span class="label">Bukti</span><span>${esc(r.jumlah)}</span></div><div class="line"><span class="label">Keterangan</span><span>${esc(r.keterangan)}</span></div>${r.link?`<div><a href="${escAttr(r.link)}" target="_blank">Buka bukti dukung</a></div>`:''}<div class="actions"><button class="secondary" onclick="openEdit(${r.rowNumber})">Edit</button><button class="danger" onclick="removeRow(${r.rowNumber})">Hapus</button></div></div>`}
+function openAdd(){document.getElementById('modalTitle').textContent='Tambah Kegiatan';document.getElementById('rowNumber').value='';document.getElementById('nomor').value=nextNumber();document.getElementById('tanggal').value=todayOrLastDate();document.getElementById('pukul').value='';document.getElementById('uraian').value='';document.getElementById('jumlah').value='';document.getElementById('link').value='';document.getElementById('keterangan').value='';document.getElementById('usePreviousDate').checked=false;toggleDateFields();document.getElementById('modal').classList.add('show');}
+function openEdit(n){const r=rows.find(x=>x.rowNumber===n);if(!r)return;document.getElementById('modalTitle').textContent='Edit Kegiatan';document.getElementById('rowNumber').value=r.rowNumber;document.getElementById('nomor').value=r.nomor;document.getElementById('tanggal').value=r.tanggalRaw||r.tanggal||'';document.getElementById('pukul').value=r.pukul;document.getElementById('uraian').value=r.uraian;document.getElementById('jumlah').value=r.jumlah;document.getElementById('link').value=r.link;document.getElementById('keterangan').value=r.keterangan;document.getElementById('usePreviousDate').checked=r.tanggalIsInherited;toggleDateFields();document.getElementById('modal').classList.add('show');}
+function toggleDateFields(){const c=document.getElementById('usePreviousDate').checked;document.getElementById('tanggal').disabled=c;document.getElementById('nomor').disabled=c}document.getElementById('usePreviousDate').addEventListener('change',toggleDateFields);
+function closeModal(){document.getElementById('modal').classList.remove('show')}
+function save(){const uraian=document.getElementById('uraian').value.trim();if(!uraian)return alert('Uraian kegiatan wajib diisi.');const p={rowNumber:document.getElementById('rowNumber').value,nomor:document.getElementById('nomor').value,tanggal:document.getElementById('tanggal').value,pukul:document.getElementById('pukul').value,uraian,jumlah:document.getElementById('jumlah').value,link:document.getElementById('link').value,keterangan:document.getElementById('keterangan').value,usePreviousDate:document.getElementById('usePreviousDate').checked};closeModal();setStatus('Menyimpan...');document.getElementById('app').classList.add('loading');callApi('save',p).then(r=>{document.getElementById('app').classList.remove('loading');setStatus(r.message);loadData()}).catch(e=>{document.getElementById('app').classList.remove('loading');setStatus('ERROR: '+e.message);alert(e.message)})}
+function removeRow(n){if(!confirm('Hapus kegiatan ini dari Sheet?'))return;setStatus('Menghapus...');document.getElementById('app').classList.add('loading');callApi('delete',{rowNumber:n}).then(r=>{document.getElementById('app').classList.remove('loading');setStatus(r.message);loadData()}).catch(e=>{document.getElementById('app').classList.remove('loading');setStatus('ERROR: '+e.message);alert(e.message)})}
+function nextNumber(){const n=rows.map(r=>Number(r.nomor)).filter(Number.isFinite);return n.length?Math.max(...n)+1:1}
+function todayOrLastDate(){const a=rows.filter(r=>r.tanggal).map(r=>r.tanggal);return a.length?a[a.length-1]:new Date().toLocaleDateString('en-CA',{timeZone:'Asia/Jakarta'})}
+function formatDateId(s){if(!s)return '';const d=new Date(s+'T00:00:00');return isNaN(d)?s:d.toLocaleDateString('id-ID',{day:'2-digit',month:'long',year:'numeric'})}
+function setStatus(s){document.getElementById('status').textContent=s}
+function esc(v){return String(v??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;')}function escAttr(v){return esc(v)}
+initMonths();loadData();
+</script>
+</body></html>
