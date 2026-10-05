@@ -3,28 +3,30 @@ export default {
     const url = new URL(request.url);
 
     if (url.pathname === '/api') {
-      if (request.method !== 'GET') return new Response('Method Not Allowed', { status: 405 });
+      if (request.method !== 'POST') return new Response('Hanya POST yang diizinkan', { status: 405 });
 
-      // Cukup gunakan GAS_URL bawaan atau dari Environment Variable
-      const target = new URL(env.GAS_URL || "https://script.google.com/macros/s/AKfycbzEQNqllBgFCFLKqssPiVvPAqDEsNtRuRtK-eD_aWFQ27mSAnzB4_h6Q9cqaTjkVcbaIg/exec");
-      
-      // Teruskan semua parameter dari frontend ke GAS
-      for (const [k, v] of url.searchParams.entries()) {
-        target.searchParams.set(k, v);
+      // Masukkan URL GAS Anda dari langkah 1 di sini sebagai cadangan
+      const GAS_URL = env.GAS_URL || "https://script.google.com/macros/s/AKfycbwzpHTZcdH8s1iV5wBJNde4QseO1RycNyY4gmGTkIhYrZ7TiqUXPPHxykJvT6o4twIGsg/exec";
+
+      try {
+        const upstream = await fetch(GAS_URL, {
+          method: 'POST',
+          body: await request.text(),
+          redirect: 'follow', // Wajib untuk mengikuti redirect dari Google
+          headers: { 'Content-Type': 'text/plain' } // Hindari CORS preflight tambahan
+        });
+
+        const bodyText = await upstream.text();
+        return new Response(bodyText, {
+          status: 200,
+          headers: {
+            'content-type': 'application/json; charset=utf-8',
+            'cache-control': 'no-store, no-cache'
+          }
+        });
+      } catch (e) {
+        return Response.json({ error: 'Gagal terhubung ke server. ' + e.message }, { status: 500 });
       }
-      
-      // Langsung tetapkan profileKey ke 'fredy' karena sistem email dimatikan
-      target.searchParams.set('profileKey', 'fredy');
-
-      const upstream = await fetch(target.toString(), { redirect: 'follow' });
-      const body = await upstream.text();
-      return new Response(body, {
-        status: upstream.ok ? 200 : upstream.status,
-        headers: {
-          'content-type': 'application/json; charset=utf-8',
-          'cache-control': 'no-store, no-cache, must-revalidate'
-        }
-      });
     }
 
     return env.ASSETS.fetch(request);
