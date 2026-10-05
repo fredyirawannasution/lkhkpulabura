@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="id">
 <head>
@@ -35,7 +36,7 @@
   <div class="field full" style="margin-bottom:10px"><label>Nama Sheet (Sesuai tab Excel)</label><input id="lSheet" placeholder="Contoh: Kiki Handayani"></div>
   <div class="field full"><label>Password</label><input type="password" id="lPass" placeholder="Masukkan password"></div>
   <button class="primary" style="width:100%;margin-top:18px" onclick="doLogin()">Masuk</button>
-  <div class="status" style="text-align:center">Jika baru pertama kali, password yang diketik akan otomatis tersimpan.</div>
+  <div class="status" style="text-align:center">Jika baru pertama kali, password yang diketik otomatis tersimpan.</div>
 </div>
 
 <div class="wrap" id="mainScreen">
@@ -101,8 +102,6 @@
 </div></div>
 
 <script>
-// Ganti seluruh isi tag <script> ... </script> paling bawah dengan ini:
-
 let cred={sheetName:'',password:''}, profile={}, rows=[], ttdB64=null;
 
 async function callApi(action, payload={}) {
@@ -200,4 +199,5 @@ function downloadPdf() {
 function closeModal(id) { document.getElementById(id).classList.remove('show'); }
 function setMsg(m) { document.getElementById('statusMsg').textContent = m; }
 </script>
-</body></html>
+</body>
+</html>
