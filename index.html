@@ -3,7 +3,6 @@
 <html lang="id">
 <head>
   <meta charset="UTF-8">
-  <base target="_top">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Aplikasi LHK</title>
   <style>
@@ -81,7 +80,7 @@
     <div class="field"><label>Pukul</label><input id="pukul" placeholder="08:00-10:00 WIB"></div><div class="field"><label>Jumlah Bukti</label><input id="jumlah"></div>
     <div class="field full"><label>Uraian Kegiatan</label><textarea id="uraian" rows="3"></textarea></div>
     <div class="field full"><label>Link (Opsional)</label><input id="link"></div>
-    <div class="field full"><label><input id="usePreviousDate" type="checkbox"> Lanjutan dari baris sebelumnya (Kosongkan No & Tgl)</label></div>
+    <div class="field full"><label><input id="usePreviousDate" type="checkbox" onchange="toggleDate()"> Lanjutan dari baris sebelumnya (Kosongkan No & Tgl)</label></div>
   </div>
   <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:15px"><button class="secondary" onclick="closeModal('modalForm')">Batal</button><button class="primary" onclick="saveRow()">Simpan</button></div>
 </div></div>
@@ -147,7 +146,7 @@ function loadData() {
 function renderRows() {
   const tb = document.getElementById('tbody');
   if(!rows.length) return tb.innerHTML = '<tr><td colspan="7" style="text-align:center">Tidak ada data</td></tr>';
-  tb.innerHTML = rows.filter(r=>r.uraian).map(r => `<tr><td>${r.nomor||''}</td><td>${r.tanggal||''}</td><td>${r.pukul||''}</td><td>${r.uraian}</td><td>${r.jumlah||''}</td><td>${r.link?'<a href="'+r.link+'" target="_blank">Buka</a>':''}</td><td><button class="secondary" onclick="openEdit(${r.rowNumber})">Edit</button> <button class="danger" onclick="hapusRow(${r.rowNumber})">X</button></td></tr>`).join('');
+  tb.innerHTML = rows.filter(r=>r.uraian).map(r => `<tr><td>${r.nomor||''}</td><td>${r.tanggal||''}</td><td>${r.pukul||''}</td><td>${r.uraian.replace(/\\n/g,'<br>')}</td><td>${r.jumlah||''}</td><td>${r.link?'<a href="'+r.link+'" target="_blank">Buka</a>':''}</td><td><button class="secondary" onclick="openEdit(${r.rowNumber})">Edit</button> <button class="danger" onclick="hapusRow(${r.rowNumber})">X</button></td></tr>`).join('');
 }
 
 function renderSigs() {
@@ -178,12 +177,43 @@ function saveSettings() {
   callApi('saveProfile', { profile: p, ttdBase64: ttdB64 }).then(loadData).catch(e => alert(e));
 }
 
-function openAdd() { document.getElementById('rowNumber').value=''; document.getElementById('uraian').value=''; document.getElementById('modalForm').classList.add('show'); }
-function openEdit(n) { const r=rows.find(x=>x.rowNumber===n); document.getElementById('rowNumber').value=r.rowNumber; document.getElementById('uraian').value=r.uraian; document.getElementById('tanggal').value=r.tanggal; document.getElementById('nomor').value=r.nomor; document.getElementById('pukul').value=r.pukul; document.getElementById('modalForm').classList.add('show'); }
+function toggleDate() {
+  const c = document.getElementById('usePreviousDate').checked;
+  document.getElementById('nomor').disabled = c;
+  document.getElementById('tanggal').disabled = c;
+}
+
+function openAdd() { 
+  document.getElementById('rowNumber').value=''; 
+  document.getElementById('uraian').value=''; 
+  document.getElementById('usePreviousDate').checked=false;
+  toggleDate();
+  document.getElementById('modalForm').classList.add('show'); 
+}
+
+function openEdit(n) { 
+  const r=rows.find(x=>x.rowNumber===n); 
+  document.getElementById('rowNumber').value=r.rowNumber; 
+  document.getElementById('uraian').value=r.uraian; 
+  document.getElementById('tanggal').value=r.tanggal; 
+  document.getElementById('nomor').value=r.nomor; 
+  document.getElementById('pukul').value=r.pukul; 
+  document.getElementById('usePreviousDate').checked = (!r.tanggal && !r.nomor);
+  toggleDate();
+  document.getElementById('modalForm').classList.add('show'); 
+}
 
 function saveRow() {
   closeModal('modalForm'); setMsg("Menyimpan kegiatan...");
-  callApi('saveRow', { rowNumber: document.getElementById('rowNumber').value, nomor: document.getElementById('nomor').value, tanggal: document.getElementById('tanggal').value, pukul: document.getElementById('pukul').value, uraian: document.getElementById('uraian').value, jumlah: document.getElementById('jumlah').value, usePreviousDate: document.getElementById('usePreviousDate').checked }).then(loadData).catch(e => alert(e));
+  callApi('saveRow', { 
+    rowNumber: document.getElementById('rowNumber').value, 
+    nomor: document.getElementById('nomor').value, 
+    tanggal: document.getElementById('tanggal').value, 
+    pukul: document.getElementById('pukul').value, 
+    uraian: document.getElementById('uraian').value, 
+    jumlah: document.getElementById('jumlah').value, 
+    usePreviousDate: document.getElementById('usePreviousDate').checked 
+  }).then(loadData).catch(e => alert(e));
 }
 
 function hapusRow(n) { if(confirm("Hapus?")) { setMsg("Menghapus..."); callApi('deleteRow', { rowNumber: n }).then(loadData); } }
