@@ -115,7 +115,6 @@
 <script>
 let cred={sheetName:'',password:''}, profile={}, rows=[], ttdB64=null;
 
-// Database Atasan sesuai KPU Labura
 const DATA_ATASAN = {
   'keuangan': { title: 'Kasubbag Keuangan, Umum, dan Logistik', name: 'Muhammad Ridwan, S.Pd', nip: '196905211994111001' },
   'teknis': { title: 'Kasubbag Teknis dan Hukum', name: 'Chairi Asman, SE, M.Si', nip: '198309162009021007' },
@@ -147,8 +146,11 @@ function loadData() {
   setMsg("Memuat data...");
   callApi('initial').then(d => {
     profile = d.profile; rows = d.rows;
-    document.getElementById('pNama').textContent = profile.nama; document.getElementById('pNip').textContent = profile.nip;
-    document.getElementById('pJabatan').textContent = profile.jabatan; document.getElementById('pUnit').textContent = profile.unitKerja; document.getElementById('pBulan').textContent = profile.bulanLaporan;
+    document.getElementById('pNama').textContent = profile.nama || '-'; 
+    document.getElementById('pNip').textContent = profile.nip || '-';
+    document.getElementById('pJabatan').textContent = profile.jabatan || '-'; 
+    document.getElementById('pUnit').textContent = profile.unitKerja || '-'; 
+    document.getElementById('pBulan').textContent = profile.bulanLaporan || '-';
     renderRows(); renderSigs(); setMsg("");
   }).catch(e => setMsg("Error: "+e));
 }
@@ -161,13 +163,22 @@ function renderRows() {
 
 function renderSigs() {
   let h = '';
-  if(profile.atasanTitle) h += `<div class="sig"><div class="role">${profile.atasanTitle}</div><div class="name" style="margin-top:55px">${profile.atasanName}</div><div class="nip">NIP. ${profile.atasanNip}</div></div>`;
-  h += `<div class="sig"><div class="role">${profile.jabatan}</div><div class="name" style="margin-top:55px">${profile.nama}</div><div class="nip">NIP. ${profile.nip}</div></div>`;
+  if(profile.atasanTitle) h += `<div class="sig"><div class="role">${profile.atasanTitle}</div><div class="name" style="margin-top:55px">${profile.atasanName}</div><div class="nip">${profile.atasanNip ? 'NIP. '+profile.atasanNip : ''}</div></div>`;
+  h += `<div class="sig"><div class="role">${profile.jabatan}</div><div class="name" style="margin-top:55px">${profile.nama}</div><div class="nip">${profile.nip ? 'NIP. '+profile.nip : ''}</div></div>`;
   document.getElementById('signatures').innerHTML = h;
 }
 
 function openSettings() {
-  ['Bulan','Nama','Nip','Jabatan','Unit','AtasanTitle','AtasanName','AtasanNip'].forEach(k => document.getElementById('s'+k).value = profile[k.charAt(0).toLowerCase()+k.slice(1)] || '');
+  // Pemetaan nilai yang sudah diperbaiki
+  document.getElementById('sBulan').value = profile.bulanLaporan || '';
+  document.getElementById('sNama').value = profile.nama || '';
+  document.getElementById('sNip').value = profile.nip || '';
+  document.getElementById('sJabatan').value = profile.jabatan || '';
+  document.getElementById('sUnit').value = profile.unitKerja || '';
+  document.getElementById('sAtasanTitle').value = profile.atasanTitle || '';
+  document.getElementById('sAtasanName').value = profile.atasanName || '';
+  document.getElementById('sAtasanNip').value = profile.atasanNip || '';
+  
   document.getElementById('sPilihAtasan').value = ''; // Reset dropdown
   ttdB64 = null; document.getElementById('sTtdFile').value = '';
   document.getElementById('modalSettings').classList.add('show');
