@@ -6,7 +6,7 @@ export default {
       if (request.method !== 'GET') return new Response('Method Not Allowed', { status: 405 });
 
       // Cukup gunakan GAS_URL bawaan atau dari Environment Variable
-      const target = new URL(env.GAS_URL || "https://script.google.com/macros/s/AKfycbxrZWzYeZdp4YX6jQxMb4PQ1ZDV4eBCy2CUC5eFAMygLeQVvBo63nhGePSmbyRClsSsLQ/exec");
+      const target = new URL(env.GAS_URL || "https://script.google.com/macros/s/AKfycbzEQNqllBgFCFLKqssPiVvPAqDEsNtRuRtK-eD_aWFQ27mSAnzB4_h6Q9cqaTjkVcbaIg/exec");
       
       // Teruskan semua parameter dari frontend ke GAS
       for (const [k, v] of url.searchParams.entries()) {
