@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="id">
 <head>
@@ -16,7 +15,7 @@
     .toolbar{display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap}
     button{border:0;border-radius:10px;padding:10px 13px;font-weight:700;cursor:pointer;font:inherit}
     .primary{background:var(--primary);color:#fff} .secondary{background:#eef2f6;color:#344054} .danger{background:#fee4e2;color:var(--danger)} .success{background:var(--success);color:#fff}
-    input,textarea{width:100%;border:1px solid #cfd4dc;border-radius:10px;padding:10px;font:inherit}
+    input,textarea,select{width:100%;border:1px solid #cfd4dc;border-radius:10px;padding:10px;font:inherit;background:#fff}
     .status{font-size:13px;color:var(--muted);margin-top:10px}
     table{width:100%;border-collapse:collapse;margin-top:15px;font-size:13px} th,td{border-bottom:1px solid var(--border);padding:10px;text-align:left}
     .modal{position:fixed;inset:0;background:rgba(15,23,42,.6);display:none;align-items:center;justify-content:center;padding:12px;z-index:99} .modal.show{display:flex}
@@ -80,7 +79,7 @@
     <div class="field"><label>Pukul</label><input id="pukul" placeholder="08:00-10:00 WIB"></div><div class="field"><label>Jumlah Bukti</label><input id="jumlah"></div>
     <div class="field full"><label>Uraian Kegiatan</label><textarea id="uraian" rows="3"></textarea></div>
     <div class="field full"><label>Link (Opsional)</label><input id="link"></div>
-    <div class="field full"><label><input id="usePreviousDate" type="checkbox" onchange="toggleDate()"> Lanjutan dari baris sebelumnya (Kosongkan No & Tgl)</label></div>
+    <div class="field full" style="display:flex;align-items:center;gap:8px"><input id="usePreviousDate" type="checkbox" onchange="toggleDate()" style="width:auto"> <label for="usePreviousDate" style="margin:0;font-weight:normal">Lanjutan dari baris sebelumnya (Kosongkan No & Tgl)</label></div>
   </div>
   <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:15px"><button class="secondary" onclick="closeModal('modalForm')">Batal</button><button class="primary" onclick="saveRow()">Simpan</button></div>
 </div></div>
@@ -92,9 +91,22 @@
     <div class="field full"><label>Bulan Laporan</label><input id="sBulan" placeholder="Contoh: Oktober 2026"></div>
     <div class="field"><label>Nama Anda</label><input id="sNama"></div><div class="field"><label>NIP Anda</label><input id="sNip"></div>
     <div class="field"><label>Jabatan Anda</label><input id="sJabatan"></div><div class="field"><label>Unit Kerja</label><input id="sUnit"></div>
-    <div class="field full" style="margin-top:10px;border-top:1px solid #ccc;padding-top:10px"><label><b>Info Atasan (Kosongkan jika Sekretaris)</b></label></div>
+    
+    <div class="field full" style="margin-top:10px;border-top:1px solid #ccc;padding-top:10px">
+      <label><b>Info Atasan (Pilih untuk mengisi otomatis)</b></label>
+      <select id="sPilihAtasan" onchange="pilihAtasan()">
+        <option value="">-- Pilih Atasan / Isi Manual --</option>
+        <option value="keuangan">Kasubbag Keuangan, Umum, dan Logistik</option>
+        <option value="teknis">Kasubbag Teknis dan Hukum</option>
+        <option value="rendatin">Kasubbag Rendatin</option>
+        <option value="hukum">Kasubbag Hukum dan SDM</option>
+        <option value="sekretaris">Sekretaris (Khusus jika Anda Kasubbag)</option>
+      </select>
+    </div>
+    
     <div class="field full"><label>Jabatan Atasan</label><input id="sAtasanTitle" placeholder="Misal: Kasubbag Teknis dan Hukum"></div>
     <div class="field"><label>Nama Atasan</label><input id="sAtasanName"></div><div class="field"><label>NIP Atasan</label><input id="sAtasanNip"></div>
+    
     <div class="field full" style="margin-top:10px;border-top:1px solid #ccc;padding-top:10px"><label><b>Tanda Tangan Gambar (Opsional)</b></label><input type="file" id="sTtdFile" accept="image/png, image/jpeg"><small style="color:gray">Jika diisi, gambar ini otomatis dicap di atas nama Anda.</small></div>
   </div>
   <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:15px"><button class="secondary" onclick="closeModal('modalSettings')">Batal</button><button class="primary" onclick="saveSettings()">Simpan Profil</button></div>
@@ -103,24 +115,25 @@
 <script>
 let cred={sheetName:'',password:''}, profile={}, rows=[], ttdB64=null;
 
+// Database Atasan sesuai KPU Labura
+const DATA_ATASAN = {
+  'keuangan': { title: 'Kasubbag Keuangan, Umum, dan Logistik', name: 'Muhammad Ridwan, S.Pd', nip: '196905211994111001' },
+  'teknis': { title: 'Kasubbag Teknis dan Hukum', name: 'Chairi Asman, SE, M.Si', nip: '198309162009021007' },
+  'rendatin': { title: 'Kasubbag Rendatin', name: 'Fachrur Razi Juned, S.T., M.IP', nip: '198206072009021006' },
+  'hukum': { title: 'Kasubbag Hukum dan SDM', name: 'Muhammad Rajali Siregar, SH', nip: '198703072020121003' },
+  'sekretaris': { title: 'Sekretaris', name: 'Muhammad Azmir Daulay', nip: '198003152009121003' }
+};
+
 async function callApi(action, payload={}) {
-  payload.action = action; 
-  payload.sheetName = cred.sheetName; 
-  payload.password = cred.password;
-  
-  const res = await fetch('/api', {
-    method: 'POST',
-    body: JSON.stringify(payload)
-  });
-  
+  payload.action = action; payload.sheetName = cred.sheetName; payload.password = cred.password;
+  const res = await fetch('/api', { method: 'POST', body: JSON.stringify(payload) });
   const data = await res.json();
   if (data.error) throw new Error(data.error);
   return data;
 }
 
 function doLogin() {
-  cred.sheetName = document.getElementById('lSheet').value; 
-  cred.password = document.getElementById('lPass').value;
+  cred.sheetName = document.getElementById('lSheet').value; cred.password = document.getElementById('lPass').value;
   if(!cred.sheetName || !cred.password) return alert("Isi form!");
   document.getElementById('loginScreen').style.opacity = '0.5';
   callApi('login').then(() => {
@@ -134,11 +147,8 @@ function loadData() {
   setMsg("Memuat data...");
   callApi('initial').then(d => {
     profile = d.profile; rows = d.rows;
-    document.getElementById('pNama').textContent = profile.nama; 
-    document.getElementById('pNip').textContent = profile.nip;
-    document.getElementById('pJabatan').textContent = profile.jabatan; 
-    document.getElementById('pUnit').textContent = profile.unitKerja; 
-    document.getElementById('pBulan').textContent = profile.bulanLaporan;
+    document.getElementById('pNama').textContent = profile.nama; document.getElementById('pNip').textContent = profile.nip;
+    document.getElementById('pJabatan').textContent = profile.jabatan; document.getElementById('pUnit').textContent = profile.unitKerja; document.getElementById('pBulan').textContent = profile.bulanLaporan;
     renderRows(); renderSigs(); setMsg("");
   }).catch(e => setMsg("Error: "+e));
 }
@@ -158,8 +168,18 @@ function renderSigs() {
 
 function openSettings() {
   ['Bulan','Nama','Nip','Jabatan','Unit','AtasanTitle','AtasanName','AtasanNip'].forEach(k => document.getElementById('s'+k).value = profile[k.charAt(0).toLowerCase()+k.slice(1)] || '');
+  document.getElementById('sPilihAtasan').value = ''; // Reset dropdown
   ttdB64 = null; document.getElementById('sTtdFile').value = '';
   document.getElementById('modalSettings').classList.add('show');
+}
+
+function pilihAtasan() {
+  const val = document.getElementById('sPilihAtasan').value;
+  if(val && DATA_ATASAN[val]) {
+    document.getElementById('sAtasanTitle').value = DATA_ATASAN[val].title;
+    document.getElementById('sAtasanName').value = DATA_ATASAN[val].name;
+    document.getElementById('sAtasanNip').value = DATA_ATASAN[val].nip;
+  }
 }
 
 document.getElementById('sTtdFile').addEventListener('change', e => {
@@ -184,35 +204,19 @@ function toggleDate() {
 }
 
 function openAdd() { 
-  document.getElementById('rowNumber').value=''; 
-  document.getElementById('uraian').value=''; 
-  document.getElementById('usePreviousDate').checked=false;
-  toggleDate();
-  document.getElementById('modalForm').classList.add('show'); 
+  document.getElementById('rowNumber').value=''; document.getElementById('uraian').value=''; document.getElementById('usePreviousDate').checked=false; toggleDate(); document.getElementById('modalForm').classList.add('show'); 
 }
 
 function openEdit(n) { 
   const r=rows.find(x=>x.rowNumber===n); 
-  document.getElementById('rowNumber').value=r.rowNumber; 
-  document.getElementById('uraian').value=r.uraian; 
-  document.getElementById('tanggal').value=r.tanggal; 
-  document.getElementById('nomor').value=r.nomor; 
-  document.getElementById('pukul').value=r.pukul; 
-  document.getElementById('usePreviousDate').checked = (!r.tanggal && !r.nomor);
-  toggleDate();
-  document.getElementById('modalForm').classList.add('show'); 
+  document.getElementById('rowNumber').value=r.rowNumber; document.getElementById('uraian').value=r.uraian; document.getElementById('tanggal').value=r.tanggal; document.getElementById('nomor').value=r.nomor; document.getElementById('pukul').value=r.pukul; 
+  document.getElementById('usePreviousDate').checked = (!r.tanggal && !r.nomor); toggleDate(); document.getElementById('modalForm').classList.add('show'); 
 }
 
 function saveRow() {
   closeModal('modalForm'); setMsg("Menyimpan kegiatan...");
   callApi('saveRow', { 
-    rowNumber: document.getElementById('rowNumber').value, 
-    nomor: document.getElementById('nomor').value, 
-    tanggal: document.getElementById('tanggal').value, 
-    pukul: document.getElementById('pukul').value, 
-    uraian: document.getElementById('uraian').value, 
-    jumlah: document.getElementById('jumlah').value, 
-    usePreviousDate: document.getElementById('usePreviousDate').checked 
+    rowNumber: document.getElementById('rowNumber').value, nomor: document.getElementById('nomor').value, tanggal: document.getElementById('tanggal').value, pukul: document.getElementById('pukul').value, uraian: document.getElementById('uraian').value, jumlah: document.getElementById('jumlah').value, usePreviousDate: document.getElementById('usePreviousDate').checked 
   }).then(loadData).catch(e => alert(e));
 }
 
