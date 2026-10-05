@@ -101,17 +101,28 @@
 </div></div>
 
 <script>
+// Ganti seluruh isi tag <script> ... </script> paling bawah dengan ini:
+
 let cred={sheetName:'',password:''}, profile={}, rows=[], ttdB64=null;
 
-function callApi(action, payload={}) {
-  payload.action = action; payload.sheetName = cred.sheetName; payload.password = cred.password;
-  return new Promise((resolve, reject) => {
-    google.script.run.withSuccessHandler(r => r.error ? reject(r.error) : resolve(r)).withFailureHandler(reject).apiEndpoint(payload);
+async function callApi(action, payload={}) {
+  payload.action = action; 
+  payload.sheetName = cred.sheetName; 
+  payload.password = cred.password;
+  
+  const res = await fetch('/api', {
+    method: 'POST',
+    body: JSON.stringify(payload)
   });
+  
+  const data = await res.json();
+  if (data.error) throw new Error(data.error);
+  return data;
 }
 
 function doLogin() {
-  cred.sheetName = document.getElementById('lSheet').value; cred.password = document.getElementById('lPass').value;
+  cred.sheetName = document.getElementById('lSheet').value; 
+  cred.password = document.getElementById('lPass').value;
   if(!cred.sheetName || !cred.password) return alert("Isi form!");
   document.getElementById('loginScreen').style.opacity = '0.5';
   callApi('login').then(() => {
@@ -125,8 +136,11 @@ function loadData() {
   setMsg("Memuat data...");
   callApi('initial').then(d => {
     profile = d.profile; rows = d.rows;
-    document.getElementById('pNama').textContent = profile.nama; document.getElementById('pNip').textContent = profile.nip;
-    document.getElementById('pJabatan').textContent = profile.jabatan; document.getElementById('pUnit').textContent = profile.unitKerja; document.getElementById('pBulan').textContent = profile.bulanLaporan;
+    document.getElementById('pNama').textContent = profile.nama; 
+    document.getElementById('pNip').textContent = profile.nip;
+    document.getElementById('pJabatan').textContent = profile.jabatan; 
+    document.getElementById('pUnit').textContent = profile.unitKerja; 
+    document.getElementById('pBulan').textContent = profile.bulanLaporan;
     renderRows(); renderSigs(); setMsg("");
   }).catch(e => setMsg("Error: "+e));
 }
@@ -139,8 +153,8 @@ function renderRows() {
 
 function renderSigs() {
   let h = '';
-  if(profile.atasanTitle) h += `<div class="sig"><div class="role">${profile.atasanTitle}</div><div class="name">${profile.atasanName}</div><div class="nip">NIP. ${profile.atasanNip}</div></div>`;
-  h += `<div class="sig"><div class="role">${profile.jabatan}</div><div class="name">${profile.nama}</div><div class="nip">NIP. ${profile.nip}</div></div>`;
+  if(profile.atasanTitle) h += `<div class="sig"><div class="role">${profile.atasanTitle}</div><div class="name" style="margin-top:55px">${profile.atasanName}</div><div class="nip">NIP. ${profile.atasanNip}</div></div>`;
+  h += `<div class="sig"><div class="role">${profile.jabatan}</div><div class="name" style="margin-top:55px">${profile.nama}</div><div class="nip">NIP. ${profile.nip}</div></div>`;
   document.getElementById('signatures').innerHTML = h;
 }
 
@@ -167,10 +181,12 @@ function saveSettings() {
 
 function openAdd() { document.getElementById('rowNumber').value=''; document.getElementById('uraian').value=''; document.getElementById('modalForm').classList.add('show'); }
 function openEdit(n) { const r=rows.find(x=>x.rowNumber===n); document.getElementById('rowNumber').value=r.rowNumber; document.getElementById('uraian').value=r.uraian; document.getElementById('tanggal').value=r.tanggal; document.getElementById('nomor').value=r.nomor; document.getElementById('pukul').value=r.pukul; document.getElementById('modalForm').classList.add('show'); }
+
 function saveRow() {
   closeModal('modalForm'); setMsg("Menyimpan kegiatan...");
   callApi('saveRow', { rowNumber: document.getElementById('rowNumber').value, nomor: document.getElementById('nomor').value, tanggal: document.getElementById('tanggal').value, pukul: document.getElementById('pukul').value, uraian: document.getElementById('uraian').value, jumlah: document.getElementById('jumlah').value, usePreviousDate: document.getElementById('usePreviousDate').checked }).then(loadData).catch(e => alert(e));
 }
+
 function hapusRow(n) { if(confirm("Hapus?")) { setMsg("Menghapus..."); callApi('deleteRow', { rowNumber: n }).then(loadData); } }
 
 function downloadPdf() {
