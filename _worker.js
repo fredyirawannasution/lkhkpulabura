@@ -30,7 +30,7 @@ export default {
         }, { status: 403 });
       }
 
-      const target = new URL(env.GAS_URL);
+      const target = new URL(env.GAS_URL || "https://script.google.com/macros/s/AKfycbwAl77M63KGmY5CQU1MmbQB2dvWZ-QK9Tydtbrycek8vDLfm4amJ9cPEgUP1msdQvB98g/exec");
       for (const [k, v] of url.searchParams.entries()) target.searchParams.set(k, v);
       target.searchParams.set('token', env.API_TOKEN);
       target.searchParams.set('profileKey', profileKey);
