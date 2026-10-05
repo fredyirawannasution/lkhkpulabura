@@ -6,7 +6,7 @@ export default {
       if (request.method !== 'POST') return new Response('Hanya POST yang diizinkan', { status: 405 });
 
       // Masukkan URL GAS Anda dari langkah 1 di sini sebagai cadangan
-      const GAS_URL = env.GAS_URL || "https://script.google.com/macros/s/AKfycbwzpHTZcdH8s1iV5wBJNde4QseO1RycNyY4gmGTkIhYrZ7TiqUXPPHxykJvT6o4twIGsg/exec";
+      const GAS_URL = env.GAS_URL || "https://script.google.com/macros/s/AKfycbzndLbgOcXHRX9qb4mb-TZsDn9VxQ473RkrhrlhM4R4OGJ69gRIlnw5IoE9ELyXKluVEA/exec";
 
       try {
         const upstream = await fetch(GAS_URL, {
