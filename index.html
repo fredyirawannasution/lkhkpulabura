@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <title>Aplikasi LHK (Dark Mode Pro)</title>
+  <title>Aplikasi LHK</title>
   <style>
     /* TEMA GELAP ELEGAN */
     :root {
@@ -63,10 +63,8 @@
     #loginScreen { max-width: 400px; margin: 100px auto; background: var(--card); padding: 30px; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,.5); border: 1px solid var(--border); }
     #mainScreen { display: none; }
     
-    /* Pengaturan PDF Iframe */
     #pdfFrame { width: 100%; flex: 1; border: none; border-radius: 10px; background: #fff; min-height: 60vh; }
     
-    /* Responsif untuk Layar Super Kecil (HP) */
     @media (max-width: 768px) {
       .meta { grid-template-columns: 1fr 1fr; }
       .meta .item:last-child { grid-column: 1 / -1; }
@@ -84,7 +82,7 @@
   <div class="field full" style="margin-bottom:15px"><label>Username / Nama Sheet</label><input id="lSheet" placeholder="Contoh: John Doe"></div>
   <div class="field full"><label>Password</label><input type="password" id="lPass" placeholder="Masukkan password"></div>
   <button class="primary" style="width:100%;margin-top:20px;padding:12px" onclick="doLogin()">🔒 MASUK</button>
-  <div class="status" style="text-align:center;margin-top:15px;color:var(--muted);font-weight:normal;">Untuk login pertama, masukkan Nama sesuai nama sheet. Masukkan Password sebagai Password Pertama.</div>
+  <div class="status" style="text-align:center;margin-top:15px;color:var(--muted);font-weight:normal;">Jika baru pertama kali, password yang diketik otomatis tersimpan.</div>
 </div>
 
 <div class="wrap" id="mainScreen">
@@ -115,7 +113,6 @@
       </div>
     </div>
     
-    <!-- Fitur Bekukan Kolom Khusus Mobile -->
     <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px; padding: 10px; background: #2a2a2a; border-radius: 8px;">
       <label style="font-size: 13px; font-weight: bold;">Tampilan HP (Bekukan Kolom):</label>
       <select id="freezeColSelect" onchange="applyFreeze()" style="width: auto; padding: 6px; font-size: 13px;">
@@ -157,10 +154,13 @@
   <input type="hidden" id="insertAfter">
   
   <div class="grid">
-    <div class="field"><label>Nomor</label><input id="nomor" type="number" placeholder="Otomatis"></div>
+    <!-- INPUT NOMOR TERKUNCI OTOMATIS -->
+    <div class="field"><label>Nomor</label><input id="nomor" type="number" readonly style="background:#1a1a1a; cursor:not-allowed;" title="Nomor dibuat otomatis"></div>
     <div class="field"><label>Hari / Tanggal</label><input id="tanggalStr" placeholder="Contoh: 1 Oktober 2026"></div>
+    
     <div class="field"><label>Pukul</label><input id="pukul" placeholder="08:00-10:00 WIB"></div>
     <div class="field"><label>Jumlah Bukti</label><input id="jumlah" placeholder="1 Kegiatan"></div>
+    
     <div class="field full"><label>Uraian Kegiatan</label><textarea id="uraian" rows="5"></textarea></div>
     <div class="field full"><label>Link (Opsional)</label><input id="link"></div>
   </div>
@@ -174,7 +174,11 @@
 <div class="modal" id="modalSettings"><div class="dialog">
   <h2>Pengaturan Akun & Profil</h2>
   <div class="grid">
-    <div class="field full"><label>Bulan Laporan</label><input id="sBulan" placeholder="Contoh: Oktober 2026"></div>
+    <!-- DROPDOWN PILIHAN BULAN (PENCEGAH TYPO) -->
+    <div class="field full">
+      <label>Bulan Laporan</label>
+      <select id="sBulan"></select>
+    </div>
     
     <div class="field full" style="margin-top:10px;border-top:1px solid #444;padding-top:15px"><label style="color:#fff"><b>INFO LOGIN (AKUN)</b></label></div>
     <div class="field"><label>Username (Singkat)</label><input id="sUsername" placeholder="Agar mudah login"></div>
@@ -229,11 +233,22 @@ const DATA_ATASAN = {
   'sekretaris': { title: 'Sekretaris', name: 'Muhammad Azmir Daulay', nip: '198003152009121003' }
 };
 
+// Buat Pilihan Bulan Dinamis (2025-2027)
+function initBulanDropdown() {
+  const sb = document.getElementById('sBulan');
+  const n = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
+  let opt = '';
+  for(let y=2025; y<=2027; y++) {
+    for(let i=0; i<12; i++) {
+      opt += `<option value="${n[i]} ${y}">${n[i]} ${y}</option>`;
+    }
+  }
+  sb.innerHTML = opt;
+}
+initBulanDropdown();
+
 async function callApi(action, payload={}) {
-  payload.action = action; 
-  payload.loginId = cred.loginId; 
-  payload.password = cred.password;
-  
+  payload.action = action; payload.loginId = cred.loginId; payload.password = cred.password;
   const res = await fetch('/api', { method: 'POST', body: JSON.stringify(payload) });
   const data = await res.json();
   if (data.error) throw new Error(data.error);
@@ -244,7 +259,6 @@ function doLogin() {
   cred.loginId = document.getElementById('lSheet').value; cred.password = document.getElementById('lPass').value;
   if(!cred.loginId || !cred.password) return alert("Username dan Password harus diisi!");
   document.getElementById('loginScreen').style.opacity = '0.5';
-  
   callApi('login').then((res) => {
     cred.sheetName = res.sheetName; 
     document.getElementById('loginScreen').style.display = 'none';
@@ -290,32 +304,24 @@ function renderRows() {
         </div>
       </td>
     </tr>`).join('');
-    
-  applyFreeze(); // Terapkan pembekuan kolom jika sedang aktif
+  applyFreeze();
 }
 
-// LOGIKA BEKUKAN KOLOM (STICKY)
 function applyFreeze() {
   const colIdx = parseInt(document.getElementById('freezeColSelect').value);
   const table = document.getElementById('lhkTable');
   const allRows = table.querySelectorAll('tr');
 
-  // Bersihkan efek sticky sebelumnya
   allRows.forEach(row => {
     const cells = row.querySelectorAll('th, td');
-    cells.forEach(c => {
-      c.style.position = ''; c.style.left = ''; c.style.zIndex = '';
-      c.style.background = ''; c.style.boxShadow = '';
-    });
+    cells.forEach(c => { c.style.position=''; c.style.left=''; c.style.zIndex=''; c.style.background=''; c.style.boxShadow=''; });
   });
 
-  // Terapkan efek sticky pada kolom yang dipilih
   if (colIdx >= 0) {
     allRows.forEach(row => {
       const cells = row.querySelectorAll('th, td');
       if(cells[colIdx]) {
-        cells[colIdx].style.position = 'sticky';
-        cells[colIdx].style.left = '0';
+        cells[colIdx].style.position = 'sticky'; cells[colIdx].style.left = '0';
         cells[colIdx].style.zIndex = cells[colIdx].tagName === 'TH' ? '3' : '1';
         cells[colIdx].style.background = cells[colIdx].tagName === 'TH' ? '#1a1a1a' : 'var(--table-bg)';
         cells[colIdx].style.boxShadow = '3px 0 6px rgba(0,0,0,0.3)';
@@ -332,17 +338,15 @@ function renderSigs() {
 }
 
 function generateBulan() {
-  if(!confirm("Buat baris tanggal secara otomatis untuk "+profile.bulanLaporan+"? (Tabel lama akan dibersihkan)")) return;
-  setMsg("Memproses pembuatan tanggal...", "white");
-  callApi('generateBulan').then(res => {
-    alert(res.message); loadData();
-  }).catch(e => alert(e));
+  if(!confirm("Buat baris tanggal otomatis untuk "+profile.bulanLaporan+"? (Tabel lama akan dihapus)")) return;
+  setMsg("Memproses...", "white");
+  callApi('generateBulan').then(res => { alert(res.message); loadData(); }).catch(e => alert(e));
 }
 
 function openSettings() {
   document.getElementById('sUsername').value = profile.username || '';
   document.getElementById('sPassword').value = profile.password || '';
-  document.getElementById('sBulan').value = profile.bulanLaporan || '';
+  document.getElementById('sBulan').value = profile.bulanLaporan || 'Oktober 2026';
   document.getElementById('sNama').value = profile.nama || '';
   document.getElementById('sNip').value = profile.nip || '';
   document.getElementById('sJabatan').value = profile.jabatan || '';
@@ -350,7 +354,6 @@ function openSettings() {
   document.getElementById('sAtasanTitle').value = profile.atasanTitle || '';
   document.getElementById('sAtasanName').value = profile.atasanName || '';
   document.getElementById('sAtasanNip').value = profile.atasanNip || '';
-  
   document.getElementById('sPilihAtasan').value = ''; ttdB64 = null; document.getElementById('sTtdFile').value = '';
   document.getElementById('modalSettings').classList.add('show');
 }
@@ -377,17 +380,23 @@ function saveSettings() {
     nip: document.getElementById('sNip').value, jabatan: document.getElementById('sJabatan').value, unitKerja: document.getElementById('sUnit').value,
     atasanTitle: document.getElementById('sAtasanTitle').value, atasanName: document.getElementById('sAtasanName').value, atasanNip: document.getElementById('sAtasanNip').value
   };
-  
   if(p.username) cred.loginId = p.username;
   if(p.password) cred.password = p.password;
-
   callApi('saveProfile', { profile: p, ttdBase64: ttdB64 }).then(loadData).catch(e => alert(e));
 }
 
 function openAdd() { 
   document.getElementById('modalTitle').textContent = 'Tambah Baris Baru';
   document.getElementById('rowNumber').value=''; document.getElementById('insertAfter').value='';
-  document.getElementById('uraian').value=''; document.getElementById('tanggalStr').value=''; document.getElementById('nomor').value=''; document.getElementById('pukul').value=''; 
+  
+  // Deteksi Otomatis Nomor Terakhir
+  let maxNum = 0;
+  for(let i=0; i<rows.length; i++) { if(rows[i].nomor && !isNaN(rows[i].nomor)) maxNum = Math.max(maxNum, Number(rows[i].nomor)); }
+  
+  document.getElementById('nomor').value = maxNum + 1; // Auto Number
+  document.getElementById('tanggalStr').readOnly = false;
+  
+  document.getElementById('uraian').value=''; document.getElementById('tanggalStr').value=''; document.getElementById('pukul').value=''; 
   document.getElementById('modalForm').classList.add('show'); 
 }
 
@@ -395,7 +404,11 @@ function openEdit(n) {
   const r=rows.find(x=>x.rowNumber===n); 
   document.getElementById('modalTitle').textContent = 'Isi Kegiatan';
   document.getElementById('rowNumber').value=r.rowNumber; document.getElementById('insertAfter').value='';
-  document.getElementById('uraian').value=r.uraian; document.getElementById('tanggalStr').value=r.tanggal; document.getElementById('nomor').value=r.nomor; document.getElementById('pukul').value=r.pukul; document.getElementById('jumlah').value=r.jumlah; document.getElementById('link').value=r.link;
+  document.getElementById('nomor').value=r.nomor; 
+  document.getElementById('tanggalStr').value=r.tanggal;
+  document.getElementById('tanggalStr').readOnly = (r.nomor === ''); // Jangan edit tanggal jika itu Lanjutan
+  
+  document.getElementById('uraian').value=r.uraian; document.getElementById('pukul').value=r.pukul; document.getElementById('jumlah').value=r.jumlah; document.getElementById('link').value=r.link;
   document.getElementById('modalForm').classList.add('show'); 
 }
 
@@ -403,30 +416,30 @@ function addLanjutan(n) {
   document.getElementById('modalTitle').textContent = 'Tambah Lanjutan (Kegiatan Kedua)';
   document.getElementById('rowNumber').value=''; 
   document.getElementById('insertAfter').value=n; 
-  document.getElementById('uraian').value=''; document.getElementById('tanggalStr').value=''; document.getElementById('nomor').value=''; document.getElementById('pukul').value=''; document.getElementById('jumlah').value=''; document.getElementById('link').value='';
+  
+  document.getElementById('nomor').value=''; // Kosong
+  document.getElementById('tanggalStr').value=''; // Kosong
+  document.getElementById('tanggalStr').readOnly = true; // Kunci input tanggal
+  
+  document.getElementById('uraian').value=''; document.getElementById('pukul').value=''; document.getElementById('jumlah').value=''; document.getElementById('link').value='';
   document.getElementById('modalForm').classList.add('show'); 
 }
 
 function saveRow() {
   closeModal('modalForm'); setMsg("Menyimpan baris...", "white");
-  
   const insertAfterVal = document.getElementById('insertAfter').value;
+  
   callApi('saveRow', { 
-    rowNumber: document.getElementById('rowNumber').value, 
-    insertAfter: insertAfterVal,
-    nomor: document.getElementById('nomor').value, 
-    tanggalStr: document.getElementById('tanggalStr').value, 
-    pukul: document.getElementById('pukul').value, 
-    uraian: document.getElementById('uraian').value, 
-    jumlah: document.getElementById('jumlah').value,
-    link: document.getElementById('link').value,
+    rowNumber: document.getElementById('rowNumber').value, insertAfter: insertAfterVal,
+    nomor: document.getElementById('nomor').value, tanggalStr: document.getElementById('tanggalStr').value, 
+    pukul: document.getElementById('pukul').value, uraian: document.getElementById('uraian').value, 
+    jumlah: document.getElementById('jumlah').value, link: document.getElementById('link').value,
     isLanjutan: !!insertAfterVal
   }).then(loadData).catch(e => alert(e));
 }
 
 function hapusRow(n) { if(confirm("Hapus baris ini?")) { setMsg("Menghapus...", "white"); callApi('deleteRow', { rowNumber: n }).then(loadData); } }
 
-// LOGIKA PREVIEW PDF
 function previewPdf() {
   setMsg("Sedang memuat dokumen (Tunggu 5-10 detik)...", "var(--warning)");
   callApi('exportPdf').then(r => {
@@ -437,7 +450,7 @@ function previewPdf() {
 }
 
 function downloadPdf() {
-  setMsg("Sedang mengonversi PDF (Tunggu 5-10 detik)...", "white");
+  setMsg("Sedang mengonversi PDF...", "white");
   callApi('exportPdf').then(r => {
     const a = document.createElement('a'); a.href = r.dataUri; a.download = `LHK_${profile.nama.replace(/\s+/g,'_')}.pdf`;
     document.body.appendChild(a); a.click(); a.remove(); setMsg("PDF berhasil diunduh.", "var(--success)");
