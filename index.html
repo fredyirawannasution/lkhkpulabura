@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Aplikasi LHK</title>
   
-  <link rel="manifest" href="/manifest.json">
+  <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#121212">
   <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/2965/2965306.png">
 
@@ -57,6 +57,8 @@
     <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:10px;">
       <div><h1 id="pNama">Memuat...</h1><div style="color:var(--muted);font-size:14px">Laporan Hasil Kegiatan</div></div>
       <div style="display:flex; gap:8px">
+        <!-- TOMBOL PWA INSTALL OTOMATIS MUNCUL JIKA HP MENDUKUNG -->
+        <button id="installBtn" class="success" style="display:none;" onclick="installApp()">📲 Instal di HP</button>
         <button class="secondary" onclick="openSettings()">⚙️ Pengaturan Akun</button>
         <button class="danger" onclick="doLogout()">🚪 Keluar</button>
       </div>
@@ -105,6 +107,16 @@
   <section class="card"><b style="color:#fff">Preview Tata Letak Tanda Tangan (Sesuai Konfigurasi Excel)</b><div class="signature-grid" id="signatures"></div></section>
 </div>
 
+<!-- MODAL ALARM PENGINGAT LHK -->
+<div class="modal" id="modalReminder">
+  <div class="dialog" style="text-align:center; max-width: 400px; padding: 35px;">
+    <h1 style="color:var(--warning); font-size: 40px; margin:0">⏰</h1>
+    <h2 style="color:#fff; margin-top:10px">Pengingat LHK!</h2>
+    <p style="color:var(--muted); line-height: 1.6;">Sudah sore, Anda terdeteksi belum mengisi Uraian Kegiatan LHK untuk hari ini. Jangan sampai lupa ya!</p>
+    <button class="primary" style="width:100%; margin-top:15px; padding: 12px;" onclick="closeModal('modalReminder')">Baik, Saya Isi Sekarang</button>
+  </div>
+</div>
+
 <div class="modal" id="modalForm"><div class="dialog">
   <h2 id="modalTitle">Edit Kegiatan</h2><input type="hidden" id="rowNumber"><input type="hidden" id="insertAfter">
   <div class="grid">
@@ -126,8 +138,6 @@
     <div class="field"><label>Username (Singkat)</label><input id="sUsername" placeholder="Agar mudah login"></div>
     <div class="field"><label>Ganti Password Baru</label><input type="text" id="sPassword" placeholder="Biarkan jika tidak diganti"></div>
     
-    <div class="field full"><label style="color:var(--success)">Email (Untuk Terima Pengingat LHK)</label><input type="email" id="sEmail" placeholder="contoh@gmail.com"></div>
-
     <div class="field full" style="margin-top:10px;border-top:1px solid #444;padding-top:15px"><label style="color:#fff"><b>DATA PEGAWAI</b></label></div>
     <div class="field"><label>Nama Lengkap</label><input id="sNama"></div><div class="field"><label>NIP Pegawai</label><input id="sNip"></div>
     <div class="field"><label>Jabatan</label><input id="sJabatan"></div><div class="field"><label>Unit Kerja</label><input id="sUnit"></div>
@@ -143,7 +153,12 @@
       </select>
     </div>
     <div class="field full"><label>Jabatan Atasan</label><input id="sAtasanTitle"></div><div class="field"><label>Nama Atasan</label><input id="sAtasanName"></div><div class="field"><label>NIP Atasan</label><input id="sAtasanNip"></div>
-    <div class="field full" style="margin-top:10px;border-top:1px solid #444;padding-top:15px"><label style="color:#fff"><b>Tanda Tangan Gambar (Opsional)</b></label><input type="file" id="sTtdFile" accept="image/png, image/jpeg" style="padding:8px"><small style="color:var(--muted)">Gambar otomatis dicap presisi di atas nama Anda.</small></div>
+    
+    <!-- 2 UPLOAD TTD SESUAI POSISI -->
+    <div class="field full" style="margin-top:10px;border-top:1px solid #444;padding-top:15px"><label style="color:#fff"><b>TANDA TANGAN (Opsional)</b></label></div>
+    <div class="field"><label style="color:var(--primary)">Pilih TTD Atasan (Kiri)</label><input type="file" id="sTtdAtasanFile" accept="image/png, image/jpeg" style="padding:8px"></div>
+    <div class="field"><label style="color:var(--success)">Pilih TTD Anda (Kanan)</label><input type="file" id="sTtdFile" accept="image/png, image/jpeg" style="padding:8px"></div>
+
   </div>
   <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:20px"><button class="secondary" onclick="closeModal('modalSettings')">Batal</button><button class="primary" onclick="saveSettings()">💾 SIMPAN PENGATURAN</button></div>
 </div></div>
@@ -151,9 +166,23 @@
 <div class="modal" id="modalPdf"><div class="dialog" style="width: 95%; height: 95vh; max-width: 1000px;"><div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;"><h2 style="margin:0">Preview LHK</h2><button class="danger" onclick="closeModal('modalPdf')">✖ Tutup Preview</button></div><iframe id="pdfFrame"></iframe></div></div>
 
 <script>
-if ('serviceWorker' in navigator) { navigator.serviceWorker.register('/sw.js'); }
+// --- LOGIKA PWA & INSTALL BUTTON ---
+let deferredPrompt;
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault(); deferredPrompt = e; document.getElementById('installBtn').style.display = 'inline-flex';
+});
+function installApp() {
+  if (deferredPrompt) {
+    deferredPrompt.prompt();
+    deferredPrompt.userChoice.then((choiceResult) => {
+      if (choiceResult.outcome === 'accepted') document.getElementById('installBtn').style.display = 'none';
+      deferredPrompt = null;
+    });
+  }
+}
+if ('serviceWorker' in navigator) { navigator.serviceWorker.register('sw.js'); }
 
-let cred={loginId:'', password:'', sheetName:''}, profile={}, rows=[], ttdB64=null;
+let cred={loginId:'', password:'', sheetName:''}, profile={}, rows=[], ttdB64=null, ttdAtasanB64=null;
 const IDLE_TIMEOUT = 3600000; // 1 Jam
 const DATA_ATASAN = {
   'keuangan': { title: 'Kasubbag Keuangan, Umum, dan Logistik', name: 'Muhammad Ridwan, S.Pd', nip: '196905211994111001' },
@@ -169,29 +198,48 @@ function initBulanDropdown() {
   sb.innerHTML = opt;
 } initBulanDropdown();
 
-// FITUR AUTO LOGOUT & SESI
+// --- ALARM PENGINGAT LHK DALAM APLIKASI ---
+function cekPengingatHarian() {
+  if(!cred.loginId || rows.length === 0) return;
+  const now = new Date(); const d = now.getDay(), h = now.getHours(), m = now.getMinutes(), dateStr = now.toDateString();
+  if (localStorage.getItem('lhk_reminded_date') === dateStr) return; // Sudah diingatkan hari ini
+
+  if (d >= 1 && d <= 5) {
+    const isTargetTime = (d <= 4 && h >= 16) || (d === 5 && (h > 16 || (h === 16 && m >= 30)));
+    if (isTargetTime) {
+      // Periksa apakah LHK hari ini sudah terisi
+      const names = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
+      const targetTgl = `${now.getDate()} ${names[now.getMonth()]} ${now.getFullYear()}`;
+      const sudahIsi = rows.some(r => r.tanggal && r.tanggal.includes(targetTgl) && r.uraian && r.uraian.trim() !== '');
+      
+      if (!sudahIsi) {
+        document.getElementById('modalReminder').classList.add('show');
+        if ("Notification" in window && Notification.permission === "granted") new Notification("Pengingat LHK", {body: "Anda belum mengisi Uraian LHK hari ini!"});
+      }
+      localStorage.setItem('lhk_reminded_date', dateStr);
+    }
+  }
+}
+setInterval(cekPengingatHarian, 60000); // Cek tiap 1 menit
+
 function updateIdleTime() { if (cred.loginId) localStorage.setItem('lhk_lastActive', Date.now()); }
 ['mousemove','keypress','touchstart','scroll'].forEach(e => document.addEventListener(e, updateIdleTime, {passive: true}));
 
 setInterval(() => {
   const lastActive = localStorage.getItem('lhk_lastActive');
   if (cred.loginId && lastActive && (Date.now() - lastActive > IDLE_TIMEOUT)) {
-    alert("Sesi berakhir karena tidak ada aktivitas selama 1 jam. Silakan login kembali.");
-    doLogout();
+    alert("Sesi berakhir karena tidak ada aktivitas selama 1 jam. Silakan login kembali."); doLogout();
   }
-}, 60000); // Cek tiap 1 menit
+}, 60000);
 
 window.onload = () => {
   const sUser = localStorage.getItem('lhk_user'), sPass = localStorage.getItem('lhk_pass'), lastActive = localStorage.getItem('lhk_lastActive');
   if (sUser && sPass && lastActive && (Date.now() - lastActive < IDLE_TIMEOUT)) {
-    document.getElementById('lSheet').value = sUser; document.getElementById('lPass').value = sPass;
-    doLogin(true); // Login otomatis dibalik layar
+    document.getElementById('lSheet').value = sUser; document.getElementById('lPass').value = sPass; doLogin(true);
   } else if (sUser) doLogout();
 };
 
-document.getElementById('lPass').addEventListener('keypress', function (e) {
-  if (e.key === 'Enter') doLogin();
-});
+document.getElementById('lPass').addEventListener('keypress', function (e) { if (e.key === 'Enter') doLogin(); });
 
 async function callApi(action, payload={}) {
   payload.action = action; payload.loginId = cred.loginId; payload.password = cred.password;
@@ -203,6 +251,9 @@ function doLogin(isAuto = false) {
   cred.loginId = document.getElementById('lSheet').value; cred.password = document.getElementById('lPass').value;
   if(!cred.loginId || !cred.password) return alert("Username dan Password harus diisi!");
   document.getElementById('loginScreen').style.opacity = '0.5';
+  
+  if ("Notification" in window && Notification.permission !== "granted") Notification.requestPermission(); // Minta izin notifikasi HP
+  
   callApi('login').then((res) => {
     cred.sheetName = res.sheetName; 
     localStorage.setItem('lhk_user', cred.loginId); localStorage.setItem('lhk_pass', cred.password); updateIdleTime();
@@ -251,17 +302,18 @@ function generateBulan() { if(!confirm("Buat baris tanggal otomatis untuk "+prof
 
 function openSettings() {
   document.getElementById('sUsername').value = profile.username || ''; document.getElementById('sPassword').value = profile.password || ''; document.getElementById('sBulan').value = profile.bulanLaporan || 'Oktober 2026';
-  document.getElementById('sEmail').value = profile.email || ''; document.getElementById('sNama').value = profile.nama || ''; document.getElementById('sNip').value = profile.nip || ''; document.getElementById('sJabatan').value = profile.jabatan || ''; document.getElementById('sUnit').value = profile.unitKerja || ''; document.getElementById('sAtasanTitle').value = profile.atasanTitle || ''; document.getElementById('sAtasanName').value = profile.atasanName || ''; document.getElementById('sAtasanNip').value = profile.atasanNip || ''; document.getElementById('sPilihAtasan').value = ''; ttdB64 = null; document.getElementById('sTtdFile').value = ''; document.getElementById('modalSettings').classList.add('show');
+  document.getElementById('sNama').value = profile.nama || ''; document.getElementById('sNip').value = profile.nip || ''; document.getElementById('sJabatan').value = profile.jabatan || ''; document.getElementById('sUnit').value = profile.unitKerja || ''; document.getElementById('sAtasanTitle').value = profile.atasanTitle || ''; document.getElementById('sAtasanName').value = profile.atasanName || ''; document.getElementById('sAtasanNip').value = profile.atasanNip || ''; document.getElementById('sPilihAtasan').value = ''; ttdB64 = null; ttdAtasanB64 = null; document.getElementById('sTtdFile').value = ''; document.getElementById('sTtdAtasanFile').value = ''; document.getElementById('modalSettings').classList.add('show');
 }
 function pilihAtasan() { const val = document.getElementById('sPilihAtasan').value; if(val && DATA_ATASAN[val]) { document.getElementById('sAtasanTitle').value = DATA_ATASAN[val].title; document.getElementById('sAtasanName').value = DATA_ATASAN[val].name; document.getElementById('sAtasanNip').value = DATA_ATASAN[val].nip; } }
 document.getElementById('sTtdFile').addEventListener('change', e => { const f = e.target.files[0]; if(!f) return; const r = new FileReader(); r.onload = ev => ttdB64 = ev.target.result; r.readAsDataURL(f); });
+document.getElementById('sTtdAtasanFile').addEventListener('change', e => { const f = e.target.files[0]; if(!f) return; const r = new FileReader(); r.onload = ev => ttdAtasanB64 = ev.target.result; r.readAsDataURL(f); });
 
 function saveSettings() {
   setMsg("Menyimpan profil...", "white"); closeModal('modalSettings');
-  const p = { username: document.getElementById('sUsername').value, password: document.getElementById('sPassword').value, email: document.getElementById('sEmail').value, bulanLaporan: document.getElementById('sBulan').value, nama: document.getElementById('sNama').value, nip: document.getElementById('sNip').value, jabatan: document.getElementById('sJabatan').value, unitKerja: document.getElementById('sUnit').value, atasanTitle: document.getElementById('sAtasanTitle').value, atasanName: document.getElementById('sAtasanName').value, atasanNip: document.getElementById('sAtasanNip').value };
+  const p = { username: document.getElementById('sUsername').value, password: document.getElementById('sPassword').value, bulanLaporan: document.getElementById('sBulan').value, nama: document.getElementById('sNama').value, nip: document.getElementById('sNip').value, jabatan: document.getElementById('sJabatan').value, unitKerja: document.getElementById('sUnit').value, atasanTitle: document.getElementById('sAtasanTitle').value, atasanName: document.getElementById('sAtasanName').value, atasanNip: document.getElementById('sAtasanNip').value };
   if(p.username) { cred.loginId = p.username; localStorage.setItem('lhk_user', cred.loginId); }
   if(p.password) { cred.password = p.password; localStorage.setItem('lhk_pass', cred.password); }
-  callApi('saveProfile', { profile: p, ttdBase64: ttdB64 }).then(loadData).catch(e => alert(e));
+  callApi('saveProfile', { profile: p, ttdBase64: ttdB64, ttdAtasanBase64: ttdAtasanB64 }).then(loadData).catch(e => alert(e));
 }
 
 function openAdd() { 
