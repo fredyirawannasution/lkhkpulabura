@@ -14,10 +14,8 @@
     * { box-sizing: border-box; } 
     body { margin: 0; background: var(--bg); font-family: Inter, system-ui, sans-serif; color: var(--text); }
     .wrap { max-width: 1200px; margin: auto; padding: 16px; }
-    
     .top-actions { display: flex; justify-content: flex-end; gap: 6px; margin-bottom: 12px; }
     .top-actions button { padding: 6px 12px; font-size: 11px; border-radius: 6px; }
-    
     .hero { background: linear-gradient(135deg, #1f2937, #111827); border-radius: 20px; padding: 22px; box-shadow: 0 8px 20px rgba(0,0,0,.3); border: 1px solid var(--border); }
     h1 { font-size: 24px; margin: 0 0 5px; color: #fff; } 
     .meta { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; margin-top: 18px; }
@@ -39,18 +37,15 @@
     th, td { border: 1px solid #555; padding: 12px 10px; text-align: center; vertical-align: middle; } 
     th { background: #1a1a1a; color: #fff; font-weight: bold; } td:nth-child(4) { text-align: left; line-height: 1.5; }
     .action-group { display: flex; gap: 6px; flex-wrap: wrap; justify-content: center; } .action-group button { padding: 8px; font-size: 11px; flex: 1; min-width: 75px; }
-    
     .pagination { display: flex; align-items: center; justify-content: space-between; margin-top: 15px; font-size: 13px; background: #2a2a2a; padding: 10px; border-radius: 8px; }
     .pagination select { width: auto; padding: 6px; }
     .pagination-buttons button { padding: 6px 12px; border-radius: 6px; background: #333; color:#fff; border: 1px solid #555;}
-    
     .modal { position: fixed; inset: 0; background: rgba(0,0,0,.85); display: none; align-items: center; justify-content: center; padding: 12px; z-index: 99; backdrop-filter: blur(4px); } .modal.show { display: flex; }
     .dialog { background: var(--card); width: min(650px, 100%); max-height: 94vh; overflow: auto; border-radius: 18px; padding: 25px; border: 1px solid var(--border); display: flex; flex-direction: column; }
     .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; } .full { grid-column: 1 / -1; } .field label { display: block; font-size: 12px; font-weight: 800; margin-bottom: 8px; color: var(--muted); }
     .signature-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 20px; } .sig { min-height: 150px; text-align: center; padding-top: 15px; border: 1px dashed #555; border-radius: 10px; background: #1f1f1f; } .sig .name { font-weight: 800; text-decoration: underline; margin-top: 60px; color: #fff; }
     #loginScreen { max-width: 400px; margin: 100px auto; background: var(--card); padding: 30px; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,.5); border: 1px solid var(--border); } #mainScreen { display: none; }
     #pdfFrame { width: 100%; flex: 1; border: none; border-radius: 10px; background: #fff; min-height: 60vh; margin-bottom:15px; }
-    
     @media (max-width: 768px) { .meta { grid-template-columns: 1fr 1fr; } .meta .item:last-child { grid-column: 1 / -1; } .toolbar { flex-direction: column; align-items: stretch; } .toolbar > div { display: flex; flex-direction: column; gap: 8px; } .toolbar button { width: 100%; } .action-group { flex-direction: column; } .pagination{ flex-direction: column; gap:10px;} }
   </style>
 </head>
@@ -66,7 +61,6 @@
 
 <div class="wrap" id="mainScreen">
 
-  <!-- PANEL ADMIN (Otomatis muncul jika role Admin/Super Admin) -->
   <div id="adminPanel" style="display:none; background:#1f2937; padding:15px; border-radius:15px; margin-bottom:15px; border: 1px solid var(--primary); box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3);">
     <h3 style="margin-top:0; color:#fff; font-size:16px;">🛡️ Panel Akses Pimpinan / Admin</h3>
     <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
@@ -158,11 +152,13 @@
   <h2 id="modalTitle">Edit Kegiatan</h2><input type="hidden" id="rowNumber"><input type="hidden" id="insertAfter">
   <div class="grid">
     <div class="field"><label>Nomor</label><input id="nomor" type="number" readonly style="background:#1a1a1a; cursor:not-allowed;" title="Nomor dibuat otomatis"></div>
-    <div class="field"><label>Hari / Tanggal</label>
+    <div class="field" id="tglField"><label>Hari / Tanggal</label>
       <input type="date" id="tanggalRaw" onchange="formatTanggalIndo()">
       <input type="hidden" id="tanggalStr">
     </div>
-    <div class="field full"><label>Pukul Kegiatan</label>
+    
+    <!-- Bagian waktu yang bisa di-hide saat Lanjutan -->
+    <div class="field full" id="waktuContainer"><label>Pukul Kegiatan</label>
       <div style="display:flex; gap:10px; align-items:center;">
         <input type="time" id="pukulAwal" style="flex:1;">
         <span style="color:#fff;"> s/d </span>
@@ -188,16 +184,28 @@
     
     <div class="field full" style="margin-top:10px;border-top:1px solid #444;padding-top:15px"><label style="color:#fff"><b>DATA PEGAWAI</b></label></div>
     <div class="field"><label>Nama Lengkap</label><input id="sNama"></div><div class="field"><label>NIP Pegawai</label><input id="sNip"></div>
-    <div class="field"><label>Jabatan</label><input id="sJabatan"></div><div class="field"><label>Unit Kerja (Sub Bagian)</label><input id="sUnit"></div>
+    <div class="field"><label>Jabatan</label><input id="sJabatan"></div>
+    
+    <!-- DROPDOWN UNIT KERJA -->
+    <div class="field"><label>Unit Kerja</label>
+      <select id="sUnit">
+        <option value="">-- Pilih Unit Kerja --</option>
+        <option value="Subbagian Keuangan Umum KPU Kab. Labuhanbatu Utara">Subbagian Keuangan Umum KPU Kab. Labuhanbatu Utara</option>
+        <option value="Subbagian Teknis dan Parmas KPU Kab. Labuhanbatu Utara">Subbagian Teknis dan Parmas KPU Kab. Labuhanbatu Utara</option>
+        <option value="Subbagian Rendatin KPU Kab. Labuhanbatu Utara">Subbagian Rendatin KPU Kab. Labuhanbatu Utara</option>
+        <option value="Subbagian Hukum dan SDM KPU Kab. Labuhanbatu Utara">Subbagian Hukum dan SDM KPU Kab. Labuhanbatu Utara</option>
+      </select>
+    </div>
+
     <div class="field full" style="margin-top:10px;border-top:1px solid #444;padding-top:15px">
       <label style="color:#fff"><b>INFO ATASAN (Pilih untuk otomatis)</b></label>
       <select id="sPilihAtasan" onchange="pilihAtasan()">
         <option value="">-- Pilih Atasan --</option>
         <option value="keuangan">Kasubbag Keuangan, Umum, dan Logistik</option>
-        <option value="teknis">Kasubbag Teknis dan Parmas</option>
+        <option value="teknis">Kasubbag Teknis dan Hukum</option>
         <option value="rendatin">Kasubbag Rendatin</option>
         <option value="hukum">Kasubbag Hukum dan SDM</option>
-        <option value="sekretaris">Sekretaris</option>
+        <option value="sekretaris">Sekretaris (Khusus jika Anda Kasubbag)</option>
       </select>
     </div>
     <div class="field full"><label>Jabatan Atasan</label><input id="sAtasanTitle"></div><div class="field"><label>Nama Atasan</label><input id="sAtasanName"></div><div class="field"><label>NIP Atasan</label><input id="sAtasanNip"></div>
@@ -210,7 +218,6 @@
   <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:20px"><button class="secondary" onclick="closeModal('modalSettings')">Batal</button><button class="primary" onclick="saveSettings()">💾 SIMPAN PENGATURAN</button></div>
 </div></div>
 
-<!-- MODAL PREVIEW DAN UNDUH DENGAN 2 TOMBOL -->
 <div class="modal" id="modalPdf">
   <div class="dialog" style="width: 95%; height: 95vh; max-width: 1000px; display:flex; flex-direction:column;">
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
@@ -244,14 +251,14 @@ if ('serviceWorker' in navigator) { navigator.serviceWorker.register('sw.js'); }
 let cred={loginId:'', password:'', sheetName:''}, profile={}, rows=[], ttdB64=null, ttdAtasanB64=null;
 let currentPage = 1, pageSize = 10;
 let base64PdfUtama = null; 
-let targetSheetView = null; // Menyimpan status jika sedang melihat LHK bawahan
+let targetSheetView = null; 
 
 const IDLE_TIMEOUT = 3600000; 
 const DATA_ATASAN = {
-  'keuangan': { title: 'Kasubbag Keuangan, Umum, dan Logistik', name: 'Muhammad Ridwan', nip: '196905211994111001' },
-  'teknis': { title: 'Kasubbag Teknis dan Parmas', name: 'Chairi Asman', nip: '198309162009021007' },
-  'rendatin': { title: 'Kasubbag Rendatin', name: 'Fachrur Razi Juned', nip: '198206072009021006' },
-  'hukum': { title: 'Kasubbag Hukum dan SDM', name: 'Muhammad Rajali Siregar', nip: '198703072020121003' },
+  'keuangan': { title: 'Kasubbag Keuangan, Umum, dan Logistik', name: 'Muhammad Ridwan, S.Pd', nip: '196905211994111001' },
+  'teknis': { title: 'Kasubbag Teknis dan Hukum', name: 'Chairi Asman, SE, M.Si', nip: '198309162009021007' },
+  'rendatin': { title: 'Kasubbag Rendatin', name: 'Fachrur Razi Juned, S.T., M.IP', nip: '198206072009021006' },
+  'hukum': { title: 'Kasubbag Hukum dan SDM', name: 'Muhammad Rajali Siregar, SH', nip: '198703072020121003' },
   'sekretaris': { title: 'Sekretaris', name: 'Muhammad Azmir Daulay', nip: '198003152009121003' }
 };
 
@@ -304,7 +311,7 @@ async function callApi(action, payload={}) {
   payload.action = action; 
   payload.loginId = cred.loginId; 
   payload.password = cred.password;
-  payload.targetSheet = targetSheetView; // Kirim target sheet untuk admin view
+  payload.targetSheet = targetSheetView; 
   
   const res = await fetch('/api', { method: 'POST', body: JSON.stringify(payload) }); 
   const data = await res.json();
@@ -375,14 +382,10 @@ function cekAdminBawahan() {
 function lihatLhkBawahan() {
   const sel = document.getElementById('bawahanSelect').value;
   if (!sel) return alert("Pilih bawahan terlebih dahulu!");
-  targetSheetView = sel;
-  loadData();
+  targetSheetView = sel; loadData();
 }
 
-function kembaliKeLhkSendiri() {
-  targetSheetView = null;
-  loadData();
-}
+function kembaliKeLhkSendiri() { targetSheetView = null; loadData(); }
 
 function formatTanggalIndo() {
   const dRaw = document.getElementById('tanggalRaw').value;
@@ -448,14 +451,24 @@ function openAdd() {
   let maxNum = 0; for(let i=0; i<rows.length; i++) { if(rows[i].nomor && !isNaN(rows[i].nomor)) maxNum = Math.max(maxNum, Number(rows[i].nomor)); }
   document.getElementById('nomor').value = maxNum + 1; 
   document.getElementById('tanggalRaw').readOnly = false; document.getElementById('tanggalRaw').value = '';
-  document.getElementById('uraian').value=''; document.getElementById('tanggalStr').value=''; document.getElementById('pukulAwal').value=''; document.getElementById('pukulAkhir').value=''; document.getElementById('modalForm').classList.add('show'); 
+  document.getElementById('uraian').value=''; document.getElementById('tanggalStr').value=''; document.getElementById('pukulAwal').value=''; document.getElementById('pukulAkhir').value=''; 
+  document.getElementById('waktuContainer').style.display = 'flex'; // Munculkan kembali jam
+  document.getElementById('modalForm').classList.add('show'); 
 }
 
 function openEdit(n) { 
   const r=rows.find(x=>x.rowNumber===n); document.getElementById('modalTitle').textContent = 'Isi Kegiatan'; document.getElementById('rowNumber').value=r.rowNumber; document.getElementById('insertAfter').value='';
   document.getElementById('nomor').value=r.nomor; 
   document.getElementById('tanggalStr').value=r.tanggal; 
-  if(r.nomor === '') { document.getElementById('tanggalRaw').style.display = 'none'; } else { document.getElementById('tanggalRaw').style.display = 'block'; }
+  
+  if(r.nomor === '') { 
+    document.getElementById('tanggalRaw').style.display = 'none';
+    document.getElementById('waktuContainer').style.display = 'none'; // Sembunyikan jam untuk lanjutan
+  } else { 
+    document.getElementById('tanggalRaw').style.display = 'block'; 
+    document.getElementById('waktuContainer').style.display = 'flex'; 
+  }
+  
   document.getElementById('pukulAwal').value=''; document.getElementById('pukulAkhir').value='';
   if(r.pukul) {
      const splitJam = r.pukul.replace(' WIB','').split('-');
@@ -469,6 +482,7 @@ function addLanjutan(n) {
   document.getElementById('modalTitle').textContent = 'Tambah Lanjutan (Kegiatan Kedua)'; document.getElementById('rowNumber').value=''; document.getElementById('insertAfter').value=n; 
   document.getElementById('nomor').value=''; document.getElementById('tanggalStr').value=''; 
   document.getElementById('tanggalRaw').style.display = 'none'; 
+  document.getElementById('waktuContainer').style.display = 'none'; // Sembunyikan input jam saat Lanjut
   document.getElementById('uraian').value=''; document.getElementById('pukulAwal').value=''; document.getElementById('pukulAkhir').value=''; document.getElementById('jumlah').value=''; document.getElementById('link').value=''; document.getElementById('modalForm').classList.add('show'); 
 }
 
@@ -505,7 +519,6 @@ function eksekusiUnduhPdf() {
   if(!base64PdfUtama) return alert("Dokumen belum siap.");
   const a = document.createElement('a'); 
   a.href = base64PdfUtama; 
-  // Gunakan targetSheetView jika sedang mengunduh milik bawahan
   const unduhNama = targetSheetView ? `LHK_${targetSheetView}.pdf` : `LHK_${profile.nama.replace(/\s+/g,'_')}.pdf`;
   a.download = unduhNama; 
   document.body.appendChild(a); 
