@@ -15,7 +15,6 @@
     body { margin: 0; background: var(--bg); font-family: Inter, system-ui, sans-serif; color: var(--text); }
     .wrap { max-width: 1200px; margin: auto; padding: 16px; }
     
-    /* Layout Header Tombol Di Atas Nama */
     .top-actions { display: flex; justify-content: flex-end; gap: 6px; margin-bottom: 12px; }
     .top-actions button { padding: 6px 12px; font-size: 11px; border-radius: 6px; }
     
@@ -66,8 +65,20 @@
 </div>
 
 <div class="wrap" id="mainScreen">
+
+  <!-- PANEL ADMIN (Otomatis muncul jika role Admin/Super Admin) -->
+  <div id="adminPanel" style="display:none; background:#1f2937; padding:15px; border-radius:15px; margin-bottom:15px; border: 1px solid var(--primary); box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3);">
+    <h3 style="margin-top:0; color:#fff; font-size:16px;">🛡️ Panel Akses Pimpinan / Admin</h3>
+    <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
+      <select id="bawahanSelect" style="flex:1; min-width:200px;">
+        <option value="">-- Memuat daftar bawahan --</option>
+      </select>
+      <button class="primary" onclick="lihatLhkBawahan()">👁️ Lihat LHK</button>
+      <button class="secondary" onclick="kembaliKeLhkSendiri()">🏠 Kembali ke LHK Saya</button>
+    </div>
+  </div>
+
   <section class="hero">
-    <!-- TOMBOL AKSI DI ATAS NAMA USER -->
     <div class="top-actions">
       <button id="installBtn" class="success" style="display:none;" onclick="installApp()">📲 Instal di HP</button>
       <button class="secondary" onclick="openSettings()">⚙️ Pengaturan</button>
@@ -75,7 +86,7 @@
     </div>
     
     <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:10px;">
-      <div><h1 id="pNama">Memuat...</h1><div style="color:var(--muted);font-size:14px">Laporan Hasil Kegiatan</div></div>
+      <div><h1 id="pNama">Memuat...</h1><div id="pModeTampilan" style="color:var(--success);font-size:14px;font-weight:bold;">Tampilan Data Anda Sendiri</div></div>
     </div>
     <div class="meta">
       <div class="item"><small>Username</small><b id="pUser">-</b></div>
@@ -107,7 +118,6 @@
       </table>
     </div>
     
-    <!-- FITUR PAGINASI HALAMAN -->
     <div class="pagination">
       <div style="display:flex; align-items:center; gap:10px;">
         <label>Tampilkan:</label>
@@ -132,10 +142,9 @@
       </div>
     </div>
   </section>
-  <section class="card"><b style="color:#fff">Preview Tata Letak Tanda Tangan (Sesuai Konfigurasi Excel)</b><div class="signature-grid" id="signatures"></div></section>
+  <section class="card"><b style="color:#fff">Preview Tata Letak Tanda Tangan</b><div class="signature-grid" id="signatures"></div></section>
 </div>
 
-<!-- MODAL ALARM PENGINGAT LHK -->
 <div class="modal" id="modalReminder">
   <div class="dialog" style="text-align:center; max-width: 400px; padding: 35px;">
     <h1 style="color:var(--warning); font-size: 40px; margin:0">⏰</h1>
@@ -149,21 +158,17 @@
   <h2 id="modalTitle">Edit Kegiatan</h2><input type="hidden" id="rowNumber"><input type="hidden" id="insertAfter">
   <div class="grid">
     <div class="field"><label>Nomor</label><input id="nomor" type="number" readonly style="background:#1a1a1a; cursor:not-allowed;" title="Nomor dibuat otomatis"></div>
-    
-    <!-- KALENDER PICKER -->
     <div class="field"><label>Hari / Tanggal</label>
-      <input type="date" id="tanggalRaw" onchange="formatTanggal Indo()">
-      <input type="hidden" id="tanggalStr"> <!-- Untuk format string ke Excel -->
+      <input type="date" id="tanggalRaw" onchange="formatTanggalIndo()">
+      <input type="hidden" id="tanggalStr">
     </div>
-    
-    <!-- JAM PICKER -->
     <div class="field full"><label>Pukul Kegiatan</label>
       <div style="display:flex; gap:10px; align-items:center;">
         <input type="time" id="pukulAwal" style="flex:1;">
         <span style="color:#fff;"> s/d </span>
         <input type="time" id="pukulAkhir" style="flex:1;">
       </div>
-      <input type="hidden" id="pukul"> <!-- Backwards compatibility -->
+      <input type="hidden" id="pukul">
     </div>
     
     <div class="field"><label>Jumlah Bukti</label><input id="jumlah" placeholder="1 Kegiatan"></div>
@@ -183,7 +188,7 @@
     
     <div class="field full" style="margin-top:10px;border-top:1px solid #444;padding-top:15px"><label style="color:#fff"><b>DATA PEGAWAI</b></label></div>
     <div class="field"><label>Nama Lengkap</label><input id="sNama"></div><div class="field"><label>NIP Pegawai</label><input id="sNip"></div>
-    <div class="field"><label>Jabatan</label><input id="sJabatan"></div><div class="field"><label>Unit Kerja</label><input id="sUnit"></div>
+    <div class="field"><label>Jabatan</label><input id="sJabatan"></div><div class="field"><label>Unit Kerja (Sub Bagian)</label><input id="sUnit"></div>
     <div class="field full" style="margin-top:10px;border-top:1px solid #444;padding-top:15px">
       <label style="color:#fff"><b>INFO ATASAN (Pilih untuk otomatis)</b></label>
       <select id="sPilihAtasan" onchange="pilihAtasan()">
@@ -197,7 +202,6 @@
     </div>
     <div class="field full"><label>Jabatan Atasan</label><input id="sAtasanTitle"></div><div class="field"><label>Nama Atasan</label><input id="sAtasanName"></div><div class="field"><label>NIP Atasan</label><input id="sAtasanNip"></div>
     
-    <!-- 2 UPLOAD TTD SESUAI POSISI -->
     <div class="field full" style="margin-top:10px;border-top:1px solid #444;padding-top:15px"><label style="color:#fff"><b>TANDA TANGAN (Opsional)</b></label></div>
     <div class="field"><label style="color:var(--primary)">Pilih TTD Atasan (Kiri)</label><input type="file" id="sTtdAtasanFile" accept="image/png, image/jpeg" style="padding:8px"></div>
     <div class="field"><label style="color:var(--success)">Pilih TTD Anda (Kanan)</label><input type="file" id="sTtdFile" accept="image/png, image/jpeg" style="padding:8px"></div>
@@ -206,7 +210,7 @@
   <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:20px"><button class="secondary" onclick="closeModal('modalSettings')">Batal</button><button class="primary" onclick="saveSettings()">💾 SIMPAN PENGATURAN</button></div>
 </div></div>
 
-<!-- MODAL PREVIEW DAN UNDUH (Satu Tombol) -->
+<!-- MODAL PREVIEW DAN UNDUH DENGAN 2 TOMBOL -->
 <div class="modal" id="modalPdf">
   <div class="dialog" style="width: 95%; height: 95vh; max-width: 1000px; display:flex; flex-direction:column;">
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
@@ -214,12 +218,14 @@
       <button class="danger" onclick="closeModal('modalPdf')">✖ Tutup</button>
     </div>
     <iframe id="pdfFrame"></iframe>
-    <button class="success" style="width:100%; padding:14px; font-size:16px;" onclick="eksekusiUnduhPdf()">⬇️ KLIK UNTUK UNDUH DOKUMEN PDF</button>
+    <div style="display:flex; gap:10px; margin-top:10px;">
+      <button class="secondary" style="flex:1; padding:14px;" onclick="eksekusiUnduhPdf()">⬇️ UNDUH LOKAL</button>
+      <button class="primary" style="flex:1; padding:14px;" onclick="eksekusiSimpanKeDrive()">☁️ SIMPAN KE DRIVE (BULANAN)</button>
+    </div>
   </div>
 </div>
 
 <script>
-// --- LOGIKA PWA & INSTALL BUTTON ---
 let deferredPrompt;
 window.addEventListener('beforeinstallprompt', (e) => {
   e.preventDefault(); deferredPrompt = e; document.getElementById('installBtn').style.display = 'inline-flex';
@@ -237,9 +243,10 @@ if ('serviceWorker' in navigator) { navigator.serviceWorker.register('sw.js'); }
 
 let cred={loginId:'', password:'', sheetName:''}, profile={}, rows=[], ttdB64=null, ttdAtasanB64=null;
 let currentPage = 1, pageSize = 10;
-let base64PdfUtama = null; // Simpan memori PDF untuk unduh
+let base64PdfUtama = null; 
+let targetSheetView = null; // Menyimpan status jika sedang melihat LHK bawahan
 
-const IDLE_TIMEOUT = 3600000; // 1 Jam
+const IDLE_TIMEOUT = 3600000; 
 const DATA_ATASAN = {
   'keuangan': { title: 'Kasubbag Keuangan, Umum, dan Logistik', name: 'Muhammad Ridwan, S.Pd', nip: '196905211994111001' },
   'teknis': { title: 'Kasubbag Teknis dan Hukum', name: 'Chairi Asman, SE, M.Si', nip: '198309162009021007' },
@@ -254,7 +261,6 @@ function initBulanDropdown() {
   sb.innerHTML = opt;
 } initBulanDropdown();
 
-// --- ALARM PENGINGAT LHK ---
 function cekPengingatHarian() {
   if(!cred.loginId || rows.length === 0) return;
   const now = new Date(); const d = now.getDay(), h = now.getHours(), m = now.getMinutes(), dateStr = now.toDateString();
@@ -295,8 +301,13 @@ window.onload = () => {
 document.getElementById('lPass').addEventListener('keypress', function (e) { if (e.key === 'Enter') doLogin(); });
 
 async function callApi(action, payload={}) {
-  payload.action = action; payload.loginId = cred.loginId; payload.password = cred.password;
-  const res = await fetch('/api', { method: 'POST', body: JSON.stringify(payload) }); const data = await res.json();
+  payload.action = action; 
+  payload.loginId = cred.loginId; 
+  payload.password = cred.password;
+  payload.targetSheet = targetSheetView; // Kirim target sheet untuk admin view
+  
+  const res = await fetch('/api', { method: 'POST', body: JSON.stringify(payload) }); 
+  const data = await res.json();
   if (data.error) throw new Error(data.error); return data;
 }
 
@@ -319,6 +330,7 @@ function doLogin(isAuto = false) {
 function doLogout() {
   localStorage.removeItem('lhk_user'); localStorage.removeItem('lhk_pass'); localStorage.removeItem('lhk_lastActive');
   cred = {loginId:'', password:'', sheetName:''};
+  targetSheetView = null;
   document.getElementById('mainScreen').style.display = 'none'; document.getElementById('loginScreen').style.display = 'block'; document.getElementById('lPass').value = '';
 }
 
@@ -329,11 +341,49 @@ function loadData() {
     document.getElementById('pNama').textContent = profile.nama || '-'; document.getElementById('pNip').textContent = profile.nip || '-';
     document.getElementById('pJabatan').textContent = profile.jabatan || '-'; document.getElementById('pUnit').textContent = profile.unitKerja || '-';
     document.getElementById('pBulan').textContent = profile.bulanLaporan || '-'; document.getElementById('pUser').textContent = profile.username || '-';
+    
+    if(!targetSheetView) {
+      cekAdminBawahan();
+      document.getElementById('pModeTampilan').textContent = "Tampilan Data Anda Sendiri";
+      document.getElementById('pModeTampilan').style.color = "var(--success)";
+    } else {
+      document.getElementById('pModeTampilan').textContent = "PENGAMATAN: Tampilan LHK Bawahan (" + profile.nama + ")";
+      document.getElementById('pModeTampilan').style.color = "var(--warning)";
+    }
+    
     currentPage = 1; renderRows(); renderSigs(); setMsg("Data termuat.");
   }).catch(e => setMsg("Error: "+e, "red"));
 }
 
-// FORMAT TANGGAL KALENDER
+function cekAdminBawahan() {
+  callApi('getBawahan').then(d => {
+    if (d.role === 'Super Admin' || d.role === 'Admin') {
+      const panel = document.getElementById('adminPanel');
+      const sel = document.getElementById('bawahanSelect');
+      if (d.bawahan && d.bawahan.length > 0) {
+        panel.style.display = 'block';
+        sel.innerHTML = '<option value="">-- Pilih LHK Bawahan untuk Dilihat --</option>' + 
+          d.bawahan.map(b => `<option value="${b.sheet}">${b.name} (${b.unit || b.role})</option>`).join('');
+      } else {
+        panel.style.display = 'block';
+        sel.innerHTML = '<option value="">-- Belum ada bawahan yang terdaftar --</option>';
+      }
+    }
+  });
+}
+
+function lihatLhkBawahan() {
+  const sel = document.getElementById('bawahanSelect').value;
+  if (!sel) return alert("Pilih bawahan terlebih dahulu!");
+  targetSheetView = sel;
+  loadData();
+}
+
+function kembaliKeLhkSendiri() {
+  targetSheetView = null;
+  loadData();
+}
+
 function formatTanggalIndo() {
   const dRaw = document.getElementById('tanggalRaw').value;
   if(!dRaw) return;
@@ -342,7 +392,6 @@ function formatTanggalIndo() {
   document.getElementById('tanggalStr').value = `${d.getDate()} ${names[d.getMonth()]} ${d.getFullYear()}`;
 }
 
-// LOGIKA PAGINASI (HALAMAN)
 function changePageSize() { pageSize = parseInt(document.getElementById('pageSize').value); currentPage = 1; renderRows(); }
 function prevPage() { if(currentPage > 1) { currentPage--; renderRows(); } }
 function nextPage() { const totalPages = Math.ceil(rows.length / pageSize); if(currentPage < totalPages) { currentPage++; renderRows(); } }
@@ -406,30 +455,20 @@ function openEdit(n) {
   const r=rows.find(x=>x.rowNumber===n); document.getElementById('modalTitle').textContent = 'Isi Kegiatan'; document.getElementById('rowNumber').value=r.rowNumber; document.getElementById('insertAfter').value='';
   document.getElementById('nomor').value=r.nomor; 
   document.getElementById('tanggalStr').value=r.tanggal; 
-  
-  // Kosongkan dan sembunyikan kalender raw jika Lanjutan
-  if(r.nomor === '') {
-    document.getElementById('tanggalRaw').style.display = 'none';
-  } else {
-    document.getElementById('tanggalRaw').style.display = 'block';
-  }
-  
-  // Pecah jam jika formatnya Awal-Akhir
+  if(r.nomor === '') { document.getElementById('tanggalRaw').style.display = 'none'; } else { document.getElementById('tanggalRaw').style.display = 'block'; }
   document.getElementById('pukulAwal').value=''; document.getElementById('pukulAkhir').value='';
   if(r.pukul) {
      const splitJam = r.pukul.replace(' WIB','').split('-');
      if(splitJam.length >= 1) document.getElementById('pukulAwal').value = splitJam[0].trim();
      if(splitJam.length >= 2) document.getElementById('pukulAkhir').value = splitJam[1].trim();
   }
-  
   document.getElementById('uraian').value=r.uraian; document.getElementById('jumlah').value=r.jumlah; document.getElementById('link').value=r.link; document.getElementById('modalForm').classList.add('show'); 
 }
 
 function addLanjutan(n) {
   document.getElementById('modalTitle').textContent = 'Tambah Lanjutan (Kegiatan Kedua)'; document.getElementById('rowNumber').value=''; document.getElementById('insertAfter').value=n; 
   document.getElementById('nomor').value=''; document.getElementById('tanggalStr').value=''; 
-  document.getElementById('tanggalRaw').style.display = 'none'; // Sembunyikan picker tanggal
-  
+  document.getElementById('tanggalRaw').style.display = 'none'; 
   document.getElementById('uraian').value=''; document.getElementById('pukulAwal').value=''; document.getElementById('pukulAkhir').value=''; document.getElementById('jumlah').value=''; document.getElementById('link').value=''; document.getElementById('modalForm').classList.add('show'); 
 }
 
@@ -452,14 +491,13 @@ function saveRow() {
 
 function hapusRow(n) { if(confirm("Hapus baris ini?")) { setMsg("Menghapus...", "white"); callApi('deleteRow', { rowNumber: n }).then(loadData); } }
 
-// FUNGSI GABUNGAN PREVIEW DAN UNDUH
 function previewPdf() { 
   setMsg("Sedang membuat dokumen Preview & Unduh...", "var(--warning)"); 
   callApi('exportPdf').then(r => { 
-    base64PdfUtama = r.dataUri; // Simpan ke memori lokal
+    base64PdfUtama = r.dataUri; 
     document.getElementById('pdfFrame').src = base64PdfUtama; 
     document.getElementById('modalPdf').classList.add('show'); 
-    setMsg("Preview siap. Klik tombol Hijau di bawah untuk mengunduh.", "var(--success)"); 
+    setMsg("Preview siap. Pilih opsi Unduh atau Simpan ke Drive.", "var(--success)"); 
   }).catch(e => alert("Gagal preview PDF: " + e)); 
 }
 
@@ -467,12 +505,31 @@ function eksekusiUnduhPdf() {
   if(!base64PdfUtama) return alert("Dokumen belum siap.");
   const a = document.createElement('a'); 
   a.href = base64PdfUtama; 
-  a.download = `LHK_${profile.nama.replace(/\s+/g,'_')}.pdf`; 
+  // Gunakan targetSheetView jika sedang mengunduh milik bawahan
+  const unduhNama = targetSheetView ? `LHK_${targetSheetView}.pdf` : `LHK_${profile.nama.replace(/\s+/g,'_')}.pdf`;
+  a.download = unduhNama; 
   document.body.appendChild(a); 
   a.click(); 
   a.remove(); 
   setMsg("PDF berhasil diunduh ke perangkat Anda.", "var(--success)"); 
   closeModal('modalPdf');
+}
+
+function eksekusiSimpanKeDrive() {
+  if(!base64PdfUtama) return alert("Dokumen belum siap.");
+  setMsg("Menyimpan ke Google Drive Bulanan...", "var(--warning)");
+  
+  const finalSheetName = targetSheetView || cred.sheetName; 
+
+  callApi('simpanPdfKeDrive', { 
+    sheetName: finalSheetName, 
+    bulanLaporan: profile.bulanLaporan, 
+    pdfBase64: base64PdfUtama 
+  }).then(res => {
+    setMsg("Berhasil disimpan ke Drive Bulanan!", "var(--success)");
+    alert("Berhasil! Dokumen PDF tersimpan di Drive. Link: " + res.url);
+    closeModal('modalPdf');
+  }).catch(e => alert("Gagal menyimpan ke drive: " + e));
 }
 
 function closeModal(id) { document.getElementById(id).classList.remove('show'); }
